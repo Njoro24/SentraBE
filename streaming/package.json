@@ -1,0 +1,31 @@
+{
+  "name": "sentra-streaming",
+  "version": "1.0.0",
+  "description": "Sentra Phase 2 - Real-time streaming pipeline",
+  "main": "index.js",
+  "scripts": {
+    "producer": "node producer.js",
+    "consumer": "node consumer.js",
+    "velocity-detector": "node velocity-detector.js",
+    "websocket-server": "node websocket-server.js",
+    "test": "node test-pipeline.js"
+  },
+  "keywords": [
+    "kafka",
+    "streaming",
+    "fraud-detection",
+    "real-time"
+  ],
+  "author": "Sentra",
+  "license": "MIT",
+  "dependencies": {
+    "kafkajs": "^2.2.4",
+    "ws": "^8.14.2",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

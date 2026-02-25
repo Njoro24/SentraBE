@@ -67,6 +67,16 @@ htmlcov/
 # Model artifacts (root protection)
 *.pkl
 *.joblib
+fraud_model.pkl
+fraud_model_metrics.json
+model_metadata.json
+feature_scaler.pkl
+
+# Node modules
+node_modules/
+package-lock.json
+npm-debug.log
+yarn-error.log
 
 # Security
 *.pem

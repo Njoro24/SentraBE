@@ -10,7 +10,7 @@ load_dotenv()
 # Database URL
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:admin123@localhost:5432/sentrabe"
+    "postgresql://user:password@localhost:5432/sentra_db"
 )
 
 engine = create_engine(DATABASE_URL)

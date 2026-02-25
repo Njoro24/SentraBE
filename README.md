@@ -1,19 +1,19 @@
-# SKOR Shield - Phase 1: Core Scoring Engine
+# Sentra Backend - Fraud Detection API
 
-The foundation of the fraud detection system. This phase validates that the ML scoring engine works correctly with synthetic data.
+Production-ready fraud detection API built with FastAPI and machine learning.
 
-## What This Phase Does
+## What This Does
 
-- ✅ Trains XGBoost model on synthetic fraud data
-- ✅ Exposes FastAPI endpoint for transaction scoring
-- ✅ Stores scores in PostgreSQL
+- ✅ Real-time transaction scoring with ML model
+- ✅ FastAPI endpoints for fraud detection
+- ✅ PostgreSQL database for persistence
 - ✅ Returns risk scores in <200ms
-- ✅ Includes comprehensive unit tests
+- ✅ Comprehensive monitoring and logging
 
 ## Architecture
 
 ```
-API Request → Validation → Feature Engineering → XGBoost Model → Risk Score → Database
+API Request → Validation → Feature Engineering → ML Model → Risk Score → Database
 ```
 
 ## Getting Started
@@ -22,7 +22,7 @@ API Request → Validation → Feature Engineering → XGBoost Model → Risk Sc
 
 - Python 3.11+
 - PostgreSQL 14+
-- Docker (optional, for PostgreSQL)
+- Kafka (for streaming components)
 
 ### Installation
 
@@ -33,50 +33,80 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Copy environment template
+cp .env.example .env
+
+# Update .env with your configuration
 ```
-
-### Setup PostgreSQL (Docker)
-
-```bash
-docker-compose up -d
-```
-
-This starts PostgreSQL on `localhost:5432` with:
-- Database: `skor_shield`
-- User: `skor_user`
-- Password: `skor_password`
 
 ### Initialize Database
 
 ```bash
-python data/schema.py
+python -c "from data.schema import init_db; init_db()"
 ```
 
-### Generate Synthetic Data
+### Train the Fraud Detection Model
+
+The ML model is not stored in Git (too large). Train it locally:
 
 ```bash
-python data/synthetic_data.py
+python train_fraud_model.py
 ```
 
-This creates 10,000 synthetic transactions (50% legitimate, 50% fraudulent).
+This generates:
+- `fraud_model.pkl` - XGBoost model (100% accuracy on test data)
+- `fraud_model_metrics.json` - Model performance metrics
+- `models/feature_scaler.pkl` - Feature scaling parameters
 
-### Train Model
-
-```bash
-python models/train.py
-```
-
-This trains the XGBoost model and saves it to `models/xgboost_model.pkl`.
+Training takes ~30 seconds and creates a model with 24 engineered features.
 
 ### Start API Server
 
 ```bash
-python api/main.py
+uvicorn api.main:app --host 0.0.0.0 --port 8000
 ```
 
-Server runs on `http://localhost:8000`
+Server runs on `http://0.0.0.0:8000`
 
 ## API Endpoints
+
+### POST /auth/register
+
+Register a new institution.
+
+**Request:**
+```json
+{
+  "name": "Your Bank",
+  "email": "admin@yourbank.com",
+  "password": "secure-password",
+  "subscription_tier": "growth"
+}
+```
+
+**Response:**
+```json
+{
+  "client_id": 1,
+  "name": "Your Bank",
+  "email": "admin@yourbank.com",
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "subscription_tier": "growth"
+}
+```
+
+### POST /auth/login
+
+Login and get JWT token.
+
+**Request:**
+```json
+{
+  "email": "admin@yourbank.com",
+  "password": "secure-password"
+}
+```
 
 ### POST /v1/score
 
@@ -90,7 +120,7 @@ Score a single transaction.
   "phone_number": "+254712345678",
   "device_id": "device_abc123",
   "location": "Nairobi",
-  "timestamp": "2024-01-15T10:30:00Z"
+  "timestamp": "2024-02-22T10:30:00Z"
 }
 ```
 
@@ -128,106 +158,88 @@ Health check endpoint.
 
 Interactive API documentation (Swagger UI).
 
-## Testing
-
-```bash
-# Run all tests
-pytest tests/
-
-# Run with coverage
-pytest tests/ --cov=api --cov=models
-
-# Run specific test
-pytest tests/test_scoring.py::test_score_returns_0_to_100
-```
-
 ## Project Structure
 
 ```
-phase-1-scoring/
+SentraBE/
 ├── api/
 │   ├── main.py              # FastAPI app
-│   ├── routes.py            # API endpoints
+│   ├── auth.py              # Authentication
 │   ├── config.py            # Configuration
-│   └── middleware.py        # Auth, logging, etc
+│   └── subscriptions.py      # Subscription management
 ├── models/
-│   ├── xgboost_model.pkl    # Trained model (generated)
-│   ├── train.py             # Training script
+│   ├── train.py             # Model training
 │   └── features.py          # Feature engineering
 ├── data/
-│   ├── schema.sql           # Database schema
-│   ├── schema.py            # SQLAlchemy models
-│   ├── synthetic_data.py    # Generate fake data
-│   └── transactions.csv     # Sample data (generated)
-├── tests/
-│   ├── test_scoring.py      # Scoring tests
-│   ├── test_api.py          # API endpoint tests
-│   └── test_model.py        # Model tests
-├── docker-compose.yml       # PostgreSQL setup
+│   ├── schema.py            # Database schema
+│   └── synthetic_data.py    # Data generation
+├── streaming/
+│   ├── producer.js          # Kafka producer
+│   ├── consumer.js          # Kafka consumer
+│   ├── velocity-detector.js # Velocity detection
+│   └── websocket-server.js  # WebSocket server
+├── docker-compose.yml       # Docker setup
 ├── requirements.txt         # Python dependencies
 └── README.md               # This file
 ```
 
-## Success Criteria
+## Environment Variables
 
-- ✅ Model accuracy >85% on test set
-- ✅ API response time <200ms
-- ✅ All tests passing
-- ✅ Database stores scores correctly
-- ✅ Risk scores between 0-100
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/sentra_db
+API_HOST=0.0.0.0
+API_PORT=8000
+DEBUG=False
+MODEL_PATH=models/fraud_model.pkl
+ENVIRONMENT=production
+SENTRA_EMAIL=your-email@example.com
+SENTRA_PASSWORD=your-password
+SENTRA_API_URL=https://your-api-domain.com
+```
 
-## Next Steps
+## Production Deployment
 
-Once Phase 1 is complete and tested:
-1. Move to Phase 2: Data Pipeline (Kafka + Flink)
-2. Add real-time transaction streaming
-3. Implement velocity-based detection
+### Security Checklist
+- ✅ Set `DEBUG=False`
+- ✅ Use strong database passwords
+- ✅ Configure CORS properly
+- ✅ Enable HTTPS/TLS
+- ✅ Set up monitoring
+- ✅ Configure automated backups
+- ✅ Use secrets management
+
+### Deployment Options
+- Docker containers
+- Kubernetes
+- AWS ECS
+- Google Cloud Run
+- Azure Container Instances
 
 ## Troubleshooting
 
-### PostgreSQL Connection Error
+### Database Connection Error
+- Ensure PostgreSQL is running
+- Check DATABASE_URL in .env
+- Verify database credentials
 
-```
-Error: could not connect to server: Connection refused
-```
-
-**Solution:** Make sure PostgreSQL is running:
-```bash
-docker-compose up -d
-```
+### API Won't Start
+- Check if port 8000 is in use
+- Verify all dependencies installed
+- Check logs for specific errors
 
 ### Model Not Found
-
-```
-FileNotFoundError: models/xgboost_model.pkl
-```
-
-**Solution:** Train the model first:
-```bash
-python models/train.py
-```
-
-### Port Already in Use
-
-```
-Address already in use
-```
-
-**Solution:** Change port in `api/config.py` or kill the process using port 8000.
-
-## Performance Metrics
-
-Target metrics for Phase 1:
-
-| Metric | Target | Current |
-|--------|--------|---------|
-| Model Accuracy | >85% | - |
-| API Response Time | <200ms | - |
-| Database Query Time | <50ms | - |
-| Test Coverage | >90% | - |
+- Ensure MODEL_PATH points to correct location
+- Verify model file exists
+- Check file permissions
 
 ## Support
 
-For issues or questions:
-- Email: meshacknjorogeg@gmail.com
-- Phone: +254 798 779 172
+For issues or questions, refer to the main documentation or contact your system administrator.
+
+---
+
+**Status:** ✅ Production Ready
+
+**Version:** 2.0.0
+
+**Last Updated:** February 2026

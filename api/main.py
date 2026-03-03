@@ -24,6 +24,7 @@ from api.auth import (
 from api.subscriptions import SubscriptionManager, SubscriptionInfo
 from api import transactions as transactions_module
 from api.transactions import router as transactions_router, load_fraud_model, init_kafka_producer
+from api.admin import router as admin_router
 from data.schema import get_db, init_db, Client, Transaction, FraudScore
 from models.features import FeatureEngineer
 
@@ -34,8 +35,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Include transaction router
+# Include routers
 app.include_router(transactions_router)
+app.include_router(admin_router)
 
 # CORS middleware
 app.add_middleware(
@@ -118,7 +120,7 @@ async def startup_event():
         
         print(f"✓ Model loaded from {model_path}")
         metrics = model_data.get('eval_metrics', {})
-        print(f"  • Accuracy: {metrics.get('accuracy', 'N/A')}")
+        print(f"  • Accuracy: {metrics.get('overall_accuracy', 'N/A')}")
         print(f"  • Precision: {metrics.get('precision', 'N/A')}")
         print(f"  • Recall: {metrics.get('recall', 'N/A')}")
     except Exception as e:
@@ -457,8 +459,9 @@ async def dashboard_summary(authorization: str = Header(None), db: Session = Dep
         raise HTTPException(status_code=404, detail="Client not found")
     
     # Get today's stats
-    from datetime import date
+    from datetime import date, timedelta
     today = date.today()
+    week_ago = today - timedelta(days=7)
     
     # Total scored today
     total_scored = db.query(FraudScore).filter(
@@ -481,11 +484,18 @@ async def dashboard_summary(authorization: str = Header(None), db: Session = Dep
         if transaction:
             fraud_value += transaction.amount
     
-    # Flagged today
+    # Flagged THIS WEEK (suspicious but not blocked)
     flagged = db.query(FraudScore).filter(
         FraudScore.client_id == client.id,
         FraudScore.recommendation == "FLAG",
-        FraudScore.created_at >= datetime.combine(today, datetime.min.time())
+        FraudScore.created_at >= datetime.combine(week_ago, datetime.min.time())
+    ).count()
+    
+    # Blocked THIS WEEK
+    blocked = db.query(FraudScore).filter(
+        FraudScore.client_id == client.id,
+        FraudScore.recommendation == "BLOCK",
+        FraudScore.created_at >= datetime.combine(week_ago, datetime.min.time())
     ).count()
     
     # Average response time
@@ -502,6 +512,7 @@ async def dashboard_summary(authorization: str = Header(None), db: Session = Dep
         "fraud_blocked_count": len(fraud_blocked),
         "fraud_blocked_value": fraud_value,
         "flagged_count": flagged,
+        "blocked_count": blocked,
         "avg_response_time_ms": round(avg_time, 2),
         "uptime_percentage": 99.98,
         "subscription_tier": client.subscription_tier,

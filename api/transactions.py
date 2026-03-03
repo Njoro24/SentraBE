@@ -15,6 +15,7 @@ import pandas as pd
 
 from data.schema import get_db, Client, Transaction, FraudScore
 from api.auth import verify_token
+from api.fraud_rules import calculate_fraud_score as calculate_fraud_score_rules
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -55,16 +56,30 @@ def init_kafka_producer():
     """Initialize Kafka producer for alerts"""
     global kafka_producer
     try:
+        import os
+        from dotenv import load_dotenv
+        
+        load_dotenv()
+        
+        # Get Kafka bootstrap servers from environment
+        kafka_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092').split(',')
+        
+        print(f"Attempting to connect to Kafka at: {kafka_servers}")
+        
         kafka_producer = KafkaProducer(
-            bootstrap_servers=['localhost:9092'],
+            bootstrap_servers=kafka_servers,
             value_serializer=lambda v: json.dumps(v).encode('utf-8'),
             acks='all',
-            retries=3
+            retries=3,
+            request_timeout_ms=10000,
+            connections_max_idle_ms=540000
         )
-        print("✓ Kafka producer initialized")
+        print("✓ Kafka producer initialized successfully")
         return True
     except Exception as e:
-        print(f"⚠ Kafka producer failed: {e}")
+        print(f"⚠ Kafka producer initialization failed: {e}")
+        print("⚠ Continuing without Kafka - alerts will not be sent to Kafka")
+        print("⚠ Make sure Docker containers are running: docker-compose up -d")
         return False
 
 
@@ -132,7 +147,7 @@ async def analyze_transaction(
         feature_names = fraud_model['feature_names']
         
         # Engineer features for the transaction
-        features = engineer_transaction_features(request)
+        features = engineer_transaction_features(request, db=db, phone_number=request.phone_number)
         
         # Create feature vector matching model training
         X = pd.DataFrame([features])
@@ -142,19 +157,45 @@ async def analyze_transaction(
         X_scaled = scaler.transform(X)
         
         # Get prediction from trained model
-        risk_score_normalized = model.predict_proba(X_scaled)[0][1]
-        risk_score = int(risk_score_normalized * 100)
+        # Model can be 2-class (old) or 3-class (new)
+        y_pred_proba = model.predict_proba(X_scaled)[0]
+        num_classes = len(y_pred_proba)
         
-        # Determine risk level and recommendation
-        if risk_score >= 70:
-            risk_level = "HIGH"
-            recommendation = "BLOCK"
-        elif risk_score >= 40:
-            risk_level = "MEDIUM"
-            recommendation = "FLAG"
+        if num_classes == 3:
+            # New 3-class model: 0=APPROVE, 1=FLAG, 2=BLOCK
+            y_pred_class = model.predict(X_scaled)[0]
+            class_to_recommendation = {0: "APPROVE", 1: "FLAG", 2: "BLOCK"}
+            class_to_risk_level = {0: "LOW", 1: "MEDIUM", 2: "HIGH"}
+            
+            recommendation = class_to_recommendation[y_pred_class]
+            risk_level = class_to_risk_level[y_pred_class]
+            
+            if y_pred_class == 2:  # BLOCK
+                risk_score = int(y_pred_proba[2] * 100)
+            elif y_pred_class == 1:  # FLAG
+                risk_score = int((y_pred_proba[1] + y_pred_proba[2]) * 50)
+            else:  # APPROVE
+                risk_score = int(y_pred_proba[0] * 30)
+            
+            print(f"✓ 3-Class Model: {recommendation} (score {risk_score})")
+            print(f"  Probabilities: APPROVE={y_pred_proba[0]:.3f}, FLAG={y_pred_proba[1]:.3f}, BLOCK={y_pred_proba[2]:.3f}")
         else:
-            risk_level = "LOW"
-            recommendation = "APPROVE"
+            # Old 2-class model: 0=APPROVE, 1=FRAUD
+            risk_score_normalized = y_pred_proba[1]
+            risk_score = int(risk_score_normalized * 100)
+            
+            if risk_score >= 70:
+                risk_level = "HIGH"
+                recommendation = "BLOCK"
+            elif risk_score >= 40:
+                risk_level = "MEDIUM"
+                recommendation = "FLAG"
+            else:
+                risk_level = "LOW"
+                recommendation = "APPROVE"
+            
+            print(f"✓ 2-Class Model: {recommendation} (score {risk_score})")
+        
         
         print(f"Transaction {request.transaction_id}: score={risk_score}, level={risk_level}")
         
@@ -235,8 +276,10 @@ async def analyze_transaction(
         raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
 
 
-def engineer_transaction_features(request: TransactionRequest) -> dict:
-    """Engineer features from transaction data"""
+def engineer_transaction_features(request: TransactionRequest, db: Session = None, phone_number: str = None) -> dict:
+    """Engineer features from transaction data using actual historical patterns"""
+    from datetime import timedelta
+    from sqlalchemy import func
     
     # Parse timestamp
     try:
@@ -244,8 +287,9 @@ def engineer_transaction_features(request: TransactionRequest) -> dict:
         hour = ts.hour
         day_of_week = ts.weekday()
     except:
-        hour = 12
-        day_of_week = 0
+        ts = datetime.utcnow()
+        hour = ts.hour
+        day_of_week = ts.weekday()
     
     # Time-based features
     is_night = 1 if (hour < 6 or hour > 22) else 0
@@ -254,28 +298,110 @@ def engineer_transaction_features(request: TransactionRequest) -> dict:
     # Amount features
     log_amount = np.log1p(request.amount)
     
-    # Merchant risk (simplified)
+    # Merchant risk
     high_risk_merchants = ['Online Gambling', 'Money Transfer', 'Gift Cards', 'Crypto', 'Wire Transfer']
     merchant_risk_score = 0.8 if request.merchant_category in high_risk_merchants else 0.3
     
     # Geographic risk
-    high_risk_countries = ['CN', 'RU', 'PK', 'BR']
+    high_risk_countries = ['CN', 'RU', 'PK', 'BR', 'NG', 'VN']
     is_foreign = 1 if request.country != 'KE' else 0
     country_fraud_rate = 0.08 if request.country in high_risk_countries else 0.03
-    geographic_risk = country_fraud_rate * is_foreign
+    geographic_risk = country_fraud_rate * (1 + is_foreign)
     
-    # Device risk (simplified - assume new device)
-    device_risk = 0.5
-    
-    # Velocity features (simplified - use defaults)
+    # Initialize defaults
+    device_is_new = 1
     velocity_ratio = 1.0
     amount_per_tx_24h = request.amount
+    tx_count_24h = 1
+    tx_count_7d = 1
+    days_since_last = 1
+    unique_merchants_24h = 1
+    declined_attempts_24h = 0
+    age_days = 1
+    
+    # Query historical data if database available
+    if db and phone_number:
+        try:
+            # Get all transactions for this phone number
+            historical_txns = db.query(Transaction).filter(
+                Transaction.phone_number == phone_number
+            ).order_by(Transaction.timestamp.desc()).all()
+            
+            if historical_txns:
+                # Account age
+                oldest_txn = historical_txns[-1]
+                age_days = max((ts - oldest_txn.timestamp).days, 1)
+                
+                # Device analysis
+                known_devices = {txn.device_id for txn in historical_txns}
+                device_is_new = 1 if request.device_id not in known_devices else 0
+                
+                # 24-hour window analysis
+                window_24h = ts - timedelta(hours=24)
+                recent_24h = [txn for txn in historical_txns if txn.timestamp >= window_24h]
+                tx_count_24h = len(recent_24h)
+                
+                if recent_24h:
+                    # Velocity calculation
+                    time_span_hours = (ts - recent_24h[-1].timestamp).total_seconds() / 3600
+                    velocity_ratio = tx_count_24h / max(time_span_hours, 1)
+                    
+                    # Amount per transaction
+                    total_amount_24h = sum(txn.amount for txn in recent_24h)
+                    amount_per_tx_24h = total_amount_24h / len(recent_24h)
+                    
+                    # Unique merchants (using location as proxy)
+                    unique_merchants_24h = len(set(txn.location for txn in recent_24h))
+                
+                # 7-day window
+                window_7d = ts - timedelta(days=7)
+                tx_count_7d = len([txn for txn in historical_txns if txn.timestamp >= window_7d])
+                
+                # Days since last transaction
+                if len(historical_txns) > 0:
+                    days_since_last = max((ts - historical_txns[0].timestamp).days, 0)
+                
+                # Check for declined attempts (using fraud scores as proxy)
+                declined_attempts_24h = db.query(FraudScore).filter(
+                    FraudScore.transaction_id.in_([txn.transaction_id for txn in recent_24h]),
+                    FraudScore.recommendation == 'BLOCK'
+                ).count()
+                
+        except Exception as e:
+            print(f"Warning: Could not fetch historical data: {e}")
+    
+    # Calculate derived risk scores
+    device_risk = device_is_new * 0.7  # New devices are risky
+    
+    # Velocity risk (high transaction frequency)
+    if velocity_ratio > 5:
+        velocity_risk = 0.9
+    elif velocity_ratio > 2:
+        velocity_risk = 0.6
+    else:
+        velocity_risk = 0.2
     
     # Time risk
-    time_risk = (is_night * 0.3 + is_weekend * 0.1)
+    time_risk = (is_night * 0.4 + is_weekend * 0.2)
     
     # Merchant amount risk
     merchant_amount_risk = (merchant_risk_score * log_amount / 10)
+    
+    # New account risk
+    if age_days < 7:
+        account_age_risk = 0.8
+    elif age_days < 30:
+        account_age_risk = 0.5
+    else:
+        account_age_risk = 0.1
+    
+    # Multiple merchants risk
+    if unique_merchants_24h > 5:
+        merchant_diversity_risk = 0.7
+    elif unique_merchants_24h > 3:
+        merchant_diversity_risk = 0.4
+    else:
+        merchant_diversity_risk = 0.1
     
     # Construct feature dict
     features = {
@@ -288,21 +414,24 @@ def engineer_transaction_features(request: TransactionRequest) -> dict:
         'merchant_risk_score': merchant_risk_score,
         'is_foreign': is_foreign,
         'country_fraud_rate': country_fraud_rate,
-        'log_tx_count_24h': np.log1p(1),
-        'transaction_count_7d': 1,
-        'days_since_last_transaction': 1,
-        'unique_merchants_24h': 1,
-        'declined_attempts_24h': 0,
-        'device_is_new': 1,
-        'ip_is_vpn': 0,
-        'age_days': 365,
+        'log_tx_count_24h': np.log1p(tx_count_24h),
+        'transaction_count_7d': tx_count_7d,
+        'days_since_last_transaction': days_since_last,
+        'unique_merchants_24h': unique_merchants_24h,
+        'declined_attempts_24h': declined_attempts_24h,
+        'device_is_new': device_is_new,
+        'ip_is_vpn': 0,  # Would need IP analysis service
+        'age_days': age_days,
         'velocity_ratio': velocity_ratio,
         'amount_per_tx_24h': amount_per_tx_24h,
         'geographic_risk': geographic_risk,
         'device_risk': device_risk,
         'time_risk': time_risk,
         'merchant_amount_risk': merchant_amount_risk,
-        'has_recent_declines': 0
+        'has_recent_declines': 1 if declined_attempts_24h > 0 else 0,
+        'velocity_risk': velocity_risk,
+        'account_age_risk': account_age_risk,
+        'merchant_diversity_risk': merchant_diversity_risk
     }
     
     return features

@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime, Boolean, ForeignKey
+from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime, Boolean, ForeignKey, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -16,6 +16,10 @@ DATABASE_URL = os.getenv(
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+# Create admin models with the same Base
+from data.admin_schema import create_admin_models
+admin_models = create_admin_models(Base)
 
 # Models
 class Client(Base):

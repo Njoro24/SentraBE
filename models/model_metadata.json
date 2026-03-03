@@ -1,0 +1,23 @@
+{
+  "accuracy": 0.984,
+  "precision": 0.9811133200795229,
+  "recall": 0.987,
+  "f1_score": 0.9840478564307078,
+  "auc_roc": 0.998424,
+  "training_samples": 8000,
+  "test_samples": 2000,
+  "feature_names": [
+    "amount_normalized",
+    "velocity_score",
+    "amount_anomaly",
+    "device_new",
+    "location_change",
+    "hour_of_day_sin",
+    "hour_of_day_cos",
+    "day_of_week_sin",
+    "day_of_week_cos"
+  ],
+  "model_type": "XGBoost",
+  "n_estimators": 100,
+  "max_depth": 6
+}

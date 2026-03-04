@@ -25,6 +25,7 @@ from api.subscriptions import SubscriptionManager, SubscriptionInfo
 from api import transactions as transactions_module
 from api.transactions import router as transactions_router, load_fraud_model, init_kafka_producer
 from api.admin import router as admin_router
+from api.client_auth import router as client_auth_router
 from data.schema import get_db, init_db, Client, Transaction, FraudScore
 from models.features import FeatureEngineer
 
@@ -38,6 +39,7 @@ app = FastAPI(
 # Include routers
 app.include_router(transactions_router)
 app.include_router(admin_router)
+app.include_router(client_auth_router)
 
 # CORS middleware
 app.add_middleware(

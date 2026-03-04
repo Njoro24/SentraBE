@@ -78,3 +78,10 @@ htmlcov/
 
 # Kafka
 kafka-logs/
+data/creditcard.csv
+data/creditcardfraud.zip
+*.csv
+*.zip
+*.pkl
+__pycache__/
+.env

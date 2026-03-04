@@ -26,17 +26,25 @@ class Client(Base):
     __tablename__ = "clients"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    institution_name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
+    phone_number = Column(String, unique=True, index=True)
     password_hash = Column(String)
     subscription_tier = Column(String, default="starter")  # starter, growth, enterprise
     api_key = Column(String, unique=True, index=True)
     is_active = Column(Boolean, default=True)
+    email_verified = Column(Boolean, default=False)
+    phone_verified = Column(Boolean, default=False)
+    failed_login_attempts = Column(Integer, default=0)
+    locked_until = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     transactions = relationship("Transaction", back_populates="client")
     fraud_scores = relationship("FraudScore", back_populates="client")
     sessions = relationship("Session", back_populates="client")
+    otp_records = relationship("OTPRecord", back_populates="client")
+    password_history = relationship("PasswordHistory", back_populates="client")
+    trusted_devices = relationship("TrustedDevice", back_populates="client")
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
@@ -102,6 +110,42 @@ class ModelMetadata(Base):
     f1_score = Column(Float)
     training_samples = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class OTPRecord(Base):
+    __tablename__ = "otp_records"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"))
+    otp_code = Column(String)
+    otp_type = Column(String)  # registration, login, password_reset
+    delivery_method = Column(String)  # email, sms
+    is_verified = Column(Boolean, default=False)
+    expires_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    client = relationship("Client", back_populates="otp_records")
+
+class PasswordHistory(Base):
+    __tablename__ = "password_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"))
+    password_hash = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    client = relationship("Client", back_populates="password_history")
+
+class TrustedDevice(Base):
+    __tablename__ = "trusted_devices"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"))
+    device_fingerprint = Column(String, unique=True)
+    device_name = Column(String)
+    trusted_until = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    client = relationship("Client", back_populates="trusted_devices")
 
 # Create tables
 def init_db():

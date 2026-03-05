@@ -263,7 +263,7 @@ def get_all_clients(db: Session, status: str = None, tier: str = None, page: int
         
         client_list.append({
             "id": client.id,
-            "name": client.name,
+            "name": client.institution_name,
             "email": client.email,
             "subscription_tier": client.subscription_tier,
             "status": "active" if client.is_active else "inactive",
@@ -317,7 +317,6 @@ def get_client_details(db: Session, client_id: int) -> dict:
         "id": client.id,
         "name": client.name,
         "email": client.email,
-        "phone": "+254700000001",
         "company": client.name,
         "address": "Nairobi, Kenya",
         "subscription_tier": client.subscription_tier,

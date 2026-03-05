@@ -10,19 +10,17 @@ from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 from data.schema import Client, OTPRecord, PasswordHistory, TrustedDevice
 from api.auth import hash_password, verify_password
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from services.otp_service import OTPService
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Email configuration
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "noreply@sentra.com")
+# Email configuration (if using SMTP)
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "noreply@sentra.io")
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "")
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 
 class PasswordValidator:
     """Validate password strength according to requirements"""
@@ -91,40 +89,6 @@ class PasswordValidator:
         return min(score, 100)
 
 
-class PhoneValidator:
-    """Validate East African phone numbers"""
-    
-    # East African country codes
-    COUNTRY_CODES = {
-        'KE': '+254',  # Kenya
-        'UG': '+256',  # Uganda
-        'TZ': '+255',  # Tanzania
-        'RW': '+250',  # Rwanda
-        'ET': '+251',  # Ethiopia
-        'SS': '+211',  # South Sudan
-    }
-    
-    @staticmethod
-    def validate(phone: str) -> Tuple[bool, str]:
-        """Validate East African phone number format"""
-        # Remove spaces and dashes
-        phone = re.sub(r'[\s\-]', '', phone)
-        
-        # Check if it starts with + and country code
-        for country, code in PhoneValidator.COUNTRY_CODES.items():
-            if phone.startswith(code):
-                # Should have 12-13 digits total (code + number)
-                if len(phone) >= 12 and len(phone) <= 13:
-                    return True, f"Valid {country} number"
-        
-        # Check if it's a local format (starts with 0 or 7)
-        if phone.startswith('0') or phone.startswith('7'):
-            if len(phone) == 10:  # Local format like 0712345678
-                return True, "Valid local format"
-        
-        return False, "Invalid East African phone number format"
-
-
 class OTPService:
     """Handle OTP generation, delivery, and verification"""
     
@@ -156,44 +120,10 @@ class OTPService:
     
     @staticmethod
     def send_otp_email(email: str, otp_code: str, otp_type: str) -> bool:
-        """Send OTP via email"""
+        """Send OTP via email using OTPService"""
         try:
-            subject_map = {
-                'registration': 'Verify Your Email - Sentra Registration',
-                'login': 'Your Sentra Login Code',
-                'password_reset': 'Reset Your Sentra Password'
-            }
-            
-            subject = subject_map.get(otp_type, 'Sentra Verification Code')
-            
-            html_body = f"""
-            <html>
-                <body style="font-family: Arial, sans-serif; background: #0f1419; color: #e0e0e0;">
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <h2 style="color: #00d9ff;">Sentra Verification</h2>
-                        <p>Your verification code is:</p>
-                        <div style="background: #1a2332; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                            <h1 style="color: #00d9ff; letter-spacing: 5px; margin: 0;">{otp_code}</h1>
-                        </div>
-                        <p style="color: #999;">This code expires in 10 minutes.</p>
-                        <p style="color: #999; font-size: 12px;">If you didn't request this code, please ignore this email.</p>
-                    </div>
-                </body>
-            </html>
-            """
-            
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = SENDER_EMAIL
-            msg['To'] = email
-            
-            msg.attach(MIMEText(html_body, 'html'))
-            
-            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-                server.starttls()
-                server.login(SENDER_EMAIL, SENDER_PASSWORD)
-                server.send_message(msg)
-            
+            # Use the OTPService from otp_service.py which uses Resend API
+            OTPService.send_registration_otp(email, otp_code)
             return True
         except Exception as e:
             print(f"Failed to send OTP email: {e}")
@@ -247,32 +177,20 @@ class AuthService:
         if password != confirm_password:
             return False, "Passwords do not match", None
         
-        # Validate phone number
-        is_valid_phone, phone_msg = PhoneValidator.validate(phone_number)
-        if not is_valid_phone:
-            return False, phone_msg, None
-        
         # Check if email already exists
         existing_email = db.query(Client).filter(Client.email == email).first()
         if existing_email:
             return False, "Email already registered", None
-        
-        # Check if phone already exists
-        existing_phone = db.query(Client).filter(Client.phone_number == phone_number).first()
-        if existing_phone:
-            return False, "Phone number already registered", None
         
         # Create new client
         from api.auth import generate_api_key
         client = Client(
             institution_name=institution_name,
             email=email,
-            phone_number=phone_number,
             password_hash=hash_password(password),
             api_key=generate_api_key(),
             is_active=True,
-            email_verified=False,
-            phone_verified=False
+            email_verified=False
         )
         
         db.add(client)
@@ -287,7 +205,28 @@ class AuthService:
         db.add(password_history)
         db.commit()
         
-        return True, "Registration successful", client.id
+        # Generate and send OTP for email verification
+        try:
+            from services.otp_service import OTPService as EmailOTPService
+            email_otp = EmailOTPService.generate_otp()
+            EmailOTPService.send_registration_otp(email, email_otp)
+            
+            # Store OTP in database
+            otp_record = OTPRecord(
+                client_id=client.id,
+                otp_code=email_otp,
+                otp_type="registration",
+                delivery_method="email",
+                is_verified=False,
+                expires_at=datetime.utcnow() + timedelta(minutes=10)
+            )
+            db.add(otp_record)
+            db.commit()
+        except Exception as e:
+            print(f"Error sending OTP: {e}")
+            # Don't fail registration if email fails, but log it
+        
+        return True, "Registration successful. Check your email for verification code.", client.id
     
     @staticmethod
     def login(db: Session, email: str, password: str) -> Tuple[bool, str, Optional[int]]:

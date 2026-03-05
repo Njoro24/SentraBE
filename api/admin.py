@@ -444,7 +444,6 @@ async def get_transaction_details(
         "client_id": txn.client_id,
         "client_name": client.name if client else "Unknown",
         "amount": 150000,
-        "phone_number": "+254700000001",
         "merchant_category": "Online Gambling",
         "location": "Moscow",
         "device_id": "device_xyz_123",

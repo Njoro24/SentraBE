@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timedelta
 import joblib
 import os
 import time
@@ -12,6 +12,7 @@ import pandas as pd
 import pickle
 import json
 from kafka import KafkaProducer
+import jwt
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,6 +29,9 @@ from api.admin import router as admin_router
 from api.client_auth import router as client_auth_router
 from data.schema import get_db, init_db, Client, Transaction, FraudScore
 from models.features import FeatureEngineer
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -61,7 +65,6 @@ kafka_producer = None
 class TransactionRequest(BaseModel):
     transaction_id: str = Field(..., description="Unique transaction ID")
     amount: float = Field(..., gt=0, description="Transaction amount in KES")
-    phone_number: str = Field(..., description="Customer phone number")
     device_id: str = Field(..., description="Device identifier")
     location: str = Field(..., description="Transaction location")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Transaction timestamp")
@@ -285,7 +288,6 @@ async def score_transaction(
                 client_id=client.id,
                 transaction_id=request.transaction_id,
                 amount=request.amount,
-                phone_number=request.phone_number,
                 device_id=request.device_id,
                 location=request.location,
                 timestamp=request.timestamp
@@ -363,39 +365,6 @@ async def root():
 
 # ── AUTHENTICATION ENDPOINTS ──
 
-@app.post("/auth/register", response_model=Token)
-async def register(request: RegisterRequest, db: Session = Depends(get_db)):
-    """Register a new bank/institution"""
-    # Check if email already exists
-    existing_client = db.query(Client).filter(Client.email == request.email).first()
-    if existing_client:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    # Create new client
-    api_key = generate_api_key()
-    client = Client(
-        name=request.name,
-        email=request.email,
-        password_hash=hash_password(request.password),
-        subscription_tier=request.subscription_tier,
-        api_key=api_key
-    )
-    db.add(client)
-    db.commit()
-    db.refresh(client)
-    
-    # Create JWT token
-    access_token = create_access_token(client.id, client.email)
-    
-    return Token(
-        access_token=access_token,
-        token_type="bearer",
-        client_id=client.id,
-        name=client.name,
-        email=client.email,
-        subscription_tier=client.subscription_tier
-    )
-
 @app.post("/auth/login", response_model=Token)
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     """Login with email and password"""
@@ -435,7 +404,7 @@ async def get_current_user(authorization: str = Header(None), db: Session = Depe
     
     return ClientResponse(
         id=client.id,
-        name=client.name,
+        institution_name=client.institution_name,
         email=client.email,
         subscription_tier=client.subscription_tier,
         api_key=client.api_key,
@@ -555,7 +524,6 @@ async def dashboard_feed(authorization: str = Header(None), limit: int = 50, db:
         feed.append({
             "transaction_id": score.transaction_id,
             "amount": transaction.amount if transaction else 0,
-            "phone_number": transaction.phone_number if transaction else "N/A",
             "location": transaction.location if transaction else "N/A",
             "risk_score": score.risk_score,
             "risk_level": score.risk_level,
@@ -591,6 +559,89 @@ async def dashboard_subscription(authorization: str = Header(None), db: Session 
     subscription_info = SubscriptionManager.get_subscription_info(client, db)
     
     return subscription_info.dict()
+
+# ============================================================================
+# PHASE 3: GRAPH-BASED FRAUD DETECTION ENDPOINTS
+# ============================================================================
+
+@app.get("/admin/fraud-rings")
+async def get_fraud_rings(authorization: str = Header(None), db: Session = Depends(get_db)):
+    """Return all detected fraud rings"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing token")
+    
+    try:
+        from services.graph_fraud_detector import GraphFraudDetector
+        detector = GraphFraudDetector()
+        rings = detector.detect_all_rings()
+        detector.close()
+        
+        return {
+            "total_rings": len(rings),
+            "rings": rings,
+            "detection_method": "graph_analysis"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Graph detection error: {str(e)}")
+
+@app.get("/admin/fraud-rings/{ring_id}")
+async def get_ring_details(ring_id: int, authorization: str = Header(None), db: Session = Depends(get_db)):
+    """Get detailed information about a specific fraud ring"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing token")
+    
+    try:
+        from services.graph_fraud_detector import GraphFraudDetector
+        detector = GraphFraudDetector()
+        details = detector.get_ring_details(ring_id)
+        detector.close()
+        
+        if not details['members']:
+            raise HTTPException(status_code=404, detail="Ring not found")
+        
+        return details
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Graph detection error: {str(e)}")
+
+@app.get("/admin/account/{account_id}/network-score")
+async def get_network_fraud_score(account_id: str, authorization: str = Header(None), db: Session = Depends(get_db)):
+    """Calculate fraud score based on network connections"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing token")
+    
+    try:
+        from services.graph_fraud_detector import GraphFraudDetector
+        detector = GraphFraudDetector()
+        score = detector.calculate_network_fraud_score(account_id)
+        detector.close()
+        
+        return {
+            "account_id": account_id,
+            "network_fraud_score": round(score, 3),
+            "risk_level": "HIGH" if score > 0.7 else "MEDIUM" if score > 0.4 else "LOW",
+            "method": "graph_analysis"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Graph detection error: {str(e)}")
+
+@app.get("/admin/money-laundering-networks")
+async def get_suspicious_networks(authorization: str = Header(None), db: Session = Depends(get_db)):
+    """Detect suspicious money laundering networks"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing token")
+    
+    try:
+        from services.graph_fraud_detector import GraphFraudDetector
+        detector = GraphFraudDetector()
+        networks = detector.detect_money_laundering_networks()
+        detector.close()
+        
+        return {
+            "total_networks": len(networks),
+            "networks": networks
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Graph detection error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

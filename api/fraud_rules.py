@@ -20,7 +20,6 @@ def calculate_fraud_score(
     location: str,
     merchant_category: str,
     device_id: str,
-    phone_number: str,
     is_new_device: bool,
     velocity: int,
     account_age_days: int,

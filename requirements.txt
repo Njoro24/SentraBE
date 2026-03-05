@@ -28,6 +28,9 @@ bcrypt==4.1.1
 python-multipart==0.0.6
 PyJWT==2.9.0
 
+# ── Email ────────────────────────────────────
+resend==0.8.0
+
 # ── Utilities ───────────────────────────────────
 python-dotenv==1.0.0
 requests==2.31.0

@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 from data.schema import get_db, Client, OTPRecord
 from services.auth_service import (
-    AuthService, OTPService, PasswordValidator, PhoneValidator
+    AuthService, OTPService, PasswordValidator
 )
 from api.auth import create_access_token, verify_token, TokenData
 
@@ -24,7 +24,6 @@ router = APIRouter(prefix="/auth", tags=["client-auth"])
 class RegisterRequest(BaseModel):
     institution_name: str = Field(..., min_length=1)
     email: str = Field(..., pattern=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-    phone_number: str = Field(..., min_length=10)
     password: str = Field(..., min_length=12)
     confirm_password: str = Field(..., min_length=12)
 
@@ -51,9 +50,6 @@ class PasswordResetRequest(BaseModel):
 class PasswordStrengthRequest(BaseModel):
     password: str
 
-class PhoneValidationRequest(BaseModel):
-    phone_number: str
-
 class RegisterResponse(BaseModel):
     success: bool
     message: str
@@ -79,10 +75,6 @@ class PasswordStrengthResponse(BaseModel):
     message: str
     requirements: dict
 
-class PhoneValidationResponse(BaseModel):
-    valid: bool
-    message: str
-
 
 # Helper functions
 def get_client_ip(request: Request) -> str:
@@ -101,15 +93,15 @@ def get_user_agent(request: Request) -> str:
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """
     Register a new client institution.
-    Requires: institution name, work email, phone number, password.
-    Returns client_id and requires email/phone verification.
+    Requires: institution name, work email, password.
+    Returns client_id and requires email verification.
     """
     
     success, message, client_id = AuthService.register(
         db,
         institution_name=request.institution_name,
         email=request.email,
-        phone_number=request.phone_number,
+        phone_number="",  # Not required anymore
         password=request.password,
         confirm_password=request.confirm_password
     )
@@ -117,17 +109,19 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=400, detail=message)
     
-    # Send OTP to email
-    otp_email = OTPService.create_otp(db, client_id, 'registration', 'email')
-    OTPService.send_otp_email(request.email, otp_email, 'registration')
-    
-    # Send OTP to phone
-    otp_phone = OTPService.create_otp(db, client_id, 'registration', 'sms')
-    OTPService.send_otp_sms(request.phone_number, otp_phone)
+    # Send OTP to email only
+    try:
+        from services.otp_service import OTPService
+        otp_code = OTPService.generate_otp()
+        OTPService.send_registration_otp(request.email, otp_code)
+        OTPService.store_otp(db, client_id, otp_code, "registration")
+    except Exception as e:
+        print(f"Error sending OTP: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send OTP: {str(e)}")
     
     return RegisterResponse(
         success=True,
-        message="Registration successful. Verify your email and phone number.",
+        message="Registration successful. Check your email for verification code.",
         client_id=client_id,
         requires_verification=True
     )
@@ -139,61 +133,43 @@ async def login(request: LoginRequest, http_request: Request, db: Session = Depe
     Login with email and password.
     Returns client_id and requires OTP verification unless device is trusted.
     """
+    from services.otp_service import OTPService
     
     success, message, client_id = AuthService.login(db, request.email, request.password)
     
     if not success:
         raise HTTPException(status_code=401, detail=message)
     
-    # Check if device is trusted
-    device_fingerprint = AuthService.get_device_fingerprint(
-        get_user_agent(http_request),
-        get_client_ip(http_request)
-    )
+    # Always require OTP for login
+    # Generate and send OTP to email
+    try:
+        otp_code = OTPService.generate_otp()
+        OTPService.send_login_otp(request.email, otp_code)
+        OTPService.store_otp(db, client_id, otp_code, "login")
+    except Exception as e:
+        print(f"Error sending login OTP: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send OTP: {str(e)}")
     
-    is_trusted = AuthService.is_device_trusted(db, client_id, device_fingerprint)
-    
-    if is_trusted:
-        # Skip OTP for trusted device
-        client = db.query(Client).filter(Client.id == client_id).first()
-        access_token = create_access_token(client_id, client.email)
-        
-        return LoginResponse(
-            success=True,
-            message="Login successful",
-            client_id=client_id,
-            requires_otp=False,
-            access_token=access_token,
-            token_type="bearer"
-        )
-    
-    # Send OTP to phone and email
-    otp_phone = OTPService.create_otp(db, client_id, 'login', 'sms')
-    OTPService.send_otp_sms(request.phone_number, otp_phone)
-    
-    otp_email = OTPService.create_otp(db, client_id, 'login', 'email')
-    client = db.query(Client).filter(Client.id == client_id).first()
-    OTPService.send_otp_email(client.email, otp_email, 'login')
-    
-    # Store device info for later trust
+    # Store device info for later trust if requested
     if request.remember_device and request.device_name:
         # Will be called after OTP verification
         pass
     
     return LoginResponse(
         success=True,
-        message="OTP sent to your phone and email",
+        message="OTP sent to your email",
         client_id=client_id,
         requires_otp=True,
-        otp_delivery_methods=["sms", "email"]
+        otp_delivery_methods=["email"]
     )
 
 
 @router.post("/verify-otp", response_model=OTPVerificationResponse)
 async def verify_otp(request: OTPVerificationRequest, http_request: Request, db: Session = Depends(get_db)):
     """
-    Verify OTP code for registration, login, or password reset.
+    Verify OTP code for registration or login.
     """
+    from services.otp_service import OTPService
     
     success, message = OTPService.verify_otp(
         db,
@@ -211,25 +187,24 @@ async def verify_otp(request: OTPVerificationRequest, http_request: Request, db:
         raise HTTPException(status_code=404, detail="Client not found")
     
     if request.otp_type == 'registration':
-        # Check if both email and phone are verified
-        email_verified = db.query(OTPRecord).filter(
-            OTPRecord.client_id == request.client_id,
-            OTPRecord.otp_type == 'registration',
-            OTPRecord.delivery_method == 'email',
-            OTPRecord.is_verified == True
-        ).first()
+        # Mark email as verified
+        client.email_verified = True
+        db.commit()
         
-        phone_verified = db.query(OTPRecord).filter(
-            OTPRecord.client_id == request.client_id,
-            OTPRecord.otp_type == 'registration',
-            OTPRecord.delivery_method == 'sms',
-            OTPRecord.is_verified == True
-        ).first()
+        # Send welcome email
+        try:
+            OTPService.send_welcome_email(client.email, client.institution_name)
+        except Exception as e:
+            print(f"Warning: Failed to send welcome email: {e}")
         
-        if email_verified and phone_verified:
-            client.email_verified = True
-            client.phone_verified = True
-            db.commit()
+        # Return token for registration
+        access_token = create_access_token(request.client_id, client.email)
+        return OTPVerificationResponse(
+            success=True,
+            message="Email verified successfully",
+            access_token=access_token,
+            token_type="bearer"
+        )
     
     elif request.otp_type == 'login':
         access_token = create_access_token(request.client_id, client.email)
@@ -332,18 +307,64 @@ async def check_password_strength(request: PasswordStrengthRequest):
     )
 
 
-@router.post("/validate-phone", response_model=PhoneValidationResponse)
-async def validate_phone(request: PhoneValidationRequest):
+@router.post("/logout")
+async def logout(authorization: str = Header(None), db: Session = Depends(get_db)):
     """
-    Validate East African phone number format in real-time.
+    Logout endpoint - invalidates the current session.
+    Client should clear local storage after receiving success response.
     """
     
-    is_valid, message = PhoneValidator.validate(request.phone_number)
+    if not authorization:
+        raise HTTPException(status_code=401, detail="No authorization header")
     
-    return PhoneValidationResponse(
-        valid=is_valid,
-        message=message
-    )
+    try:
+        # Extract token from "Bearer <token>"
+        token = authorization.split(" ")[1] if " " in authorization else authorization
+        token_data = verify_token(token)
+        
+        if not token_data:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        # Token is invalidated on the client side by clearing localStorage
+        # Backend can optionally track logout events for audit logs
+        return {"success": True, "message": "Logged out successfully"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Logout failed: {str(e)}")
+
+
+@router.get("/me")
+async def get_current_user(authorization: str = Header(None), db: Session = Depends(get_db)):
+    """
+    Get current authenticated user information.
+    """
+    
+    if not authorization:
+        raise HTTPException(status_code=401, detail="No authorization header")
+    
+    try:
+        # Extract token from "Bearer <token>"
+        token = authorization.split(" ")[1] if " " in authorization else authorization
+        token_data = verify_token(token)
+        
+        if not token_data:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        # Get client from database
+        client = db.query(Client).filter(Client.id == token_data.client_id).first()
+        if not client:
+            raise HTTPException(status_code=404, detail="Client not found")
+        
+        return {
+            "id": client.id,
+            "institution_name": client.institution_name,
+            "email": client.email,
+            "subscription_tier": client.subscription_tier,
+            "is_active": client.is_active
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Failed to get user: {str(e)}")
 
 
 @router.get("/verify-email-otp/{client_id}/{otp_code}")

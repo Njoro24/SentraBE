@@ -111,7 +111,6 @@ class ClientDetailsResponse(BaseModel):
     id: int
     name: str
     email: str
-    phone: Optional[str]
     company: str
     address: Optional[str]
     subscription_tier: str
@@ -297,7 +296,6 @@ class TransactionDetailsResponse(BaseModel):
     client_id: int
     client_name: str
     amount: float
-    phone_number: Optional[str]
     merchant_category: Optional[str]
     location: Optional[str]
     device_id: Optional[str]

@@ -28,9 +28,10 @@ class Token(BaseModel):
     subscription_tier: str
 
 class RegisterRequest(BaseModel):
-    name: str
+    institution_name: str
     email: str
     password: str
+    confirm_password: str
     subscription_tier: str = "starter"
 
 class LoginRequest(BaseModel):
@@ -39,7 +40,7 @@ class LoginRequest(BaseModel):
 
 class ClientResponse(BaseModel):
     id: int
-    name: str
+    institution_name: str
     email: str
     subscription_tier: str
     api_key: str

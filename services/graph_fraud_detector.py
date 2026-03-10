@@ -9,9 +9,20 @@ Graph-based fraud detection algorithms
 from neo4j import GraphDatabase
 from collections import defaultdict
 import json
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class GraphFraudDetector:
-    def __init__(self, uri="bolt://localhost:7687", username="neo4j", password="sentra123"):
+    def __init__(self, uri=None, username=None, password=None):
+        uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
+        username = username or os.getenv("NEO4J_USERNAME", "neo4j")
+        password = password or os.getenv("NEO4J_PASSWORD")
+        
+        if not password:
+            raise ValueError("NEO4J_PASSWORD environment variable is required")
+        
         self.driver = GraphDatabase.driver(uri, auth=(username, password))
 
     def close(self):

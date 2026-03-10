@@ -7,6 +7,9 @@ Run this once after deployment
 import sys
 import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -95,17 +98,24 @@ def main():
     print("Sentra Admin Setup (Auto)")
     print("="*50 + "\n")
     
+    # Get credentials from environment
+    username = os.getenv("ADMIN_USERNAME", "admin")
+    email = os.getenv("ADMIN_EMAIL")
+    password = os.getenv("ADMIN_PASSWORD")
+    
+    if not email or not password:
+        print("✗ Error: ADMIN_EMAIL and ADMIN_PASSWORD environment variables required")
+        print("  Set these in your .env file before running this script")
+        return
+    
     # Create tables
     setup_database()
     
     # Create default settings
     create_default_settings()
     
-    # Create admin user with predefined credentials
+    # Create admin user
     print("\nCreating admin user...")
-    username = "admin"
-    email = "njoro26admin@gmail.com"
-    password = "Meshack24#"
     
     if create_admin_user(username, email, password):
         print("\n" + "="*50)
@@ -114,7 +124,6 @@ def main():
         print(f"\nYou can now login with:")
         print(f"  Username: {username}")
         print(f"  Email: {email}")
-        print(f"  Password: {password}")
         print(f"\nAPI Endpoint: POST /api/admin/login")
         print("="*50 + "\n")
     else:

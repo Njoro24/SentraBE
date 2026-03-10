@@ -87,7 +87,6 @@ class TransactionRequest(BaseModel):
     """Transaction scoring request"""
     transaction_id: str = Field(..., description="Unique transaction ID")
     amount: float = Field(..., gt=0, description="Transaction amount")
-    phone_number: str = Field(..., description="Customer phone number")
     device_id: str = Field(..., description="Device identifier")
     location: str = Field(..., description="Transaction location")
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
@@ -147,7 +146,7 @@ async def analyze_transaction(
         feature_names = fraud_model['feature_names']
         
         # Engineer features for the transaction
-        features = engineer_transaction_features(request, db=db, phone_number=request.phone_number)
+        features = engineer_transaction_features(request, db=db)
         
         # Create feature vector matching model training
         X = pd.DataFrame([features])
@@ -208,7 +207,6 @@ async def analyze_transaction(
                 client_id=client.id,
                 transaction_id=request.transaction_id,
                 amount=request.amount,
-                phone_number=request.phone_number,
                 device_id=request.device_id,
                 location=request.location,
                 timestamp=datetime.fromisoformat(request.timestamp)
@@ -245,7 +243,6 @@ async def analyze_transaction(
                         'risk_level': risk_level,
                         'recommendation': recommendation,
                         'timestamp': datetime.utcnow().isoformat(),
-                        'phone_number': request.phone_number,
                         'location': request.location,
                         'signals': {
                             'velocity': features.get('velocity_ratio', 0),
@@ -276,7 +273,7 @@ async def analyze_transaction(
         raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
 
 
-def engineer_transaction_features(request: TransactionRequest, db: Session = None, phone_number: str = None) -> dict:
+def engineer_transaction_features(request: TransactionRequest, db: Session = None) -> dict:
     """Engineer features from transaction data using actual historical patterns"""
     from datetime import timedelta
     from sqlalchemy import func
@@ -320,11 +317,11 @@ def engineer_transaction_features(request: TransactionRequest, db: Session = Non
     age_days = 1
     
     # Query historical data if database available
-    if db and phone_number:
+    if db and request.phone_number:
         try:
             # Get all transactions for this phone number
             historical_txns = db.query(Transaction).filter(
-                Transaction.phone_number == phone_number
+                Transaction.phone_number == request.phone_number
             ).order_by(Transaction.timestamp.desc()).all()
             
             if historical_txns:

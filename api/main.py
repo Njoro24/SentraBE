@@ -27,6 +27,10 @@ from api import transactions as transactions_module
 from api.transactions import router as transactions_router, load_fraud_model, init_kafka_producer
 from api.admin import router as admin_router
 from api.client_auth import router as client_auth_router
+from api import t24_mock
+from api import t24_integration
+from api import feedback
+from api import learning
 from data.schema import get_db, init_db, Client, Transaction, FraudScore
 from models.features import FeatureEngineer
 from dotenv import load_dotenv
@@ -44,6 +48,10 @@ app = FastAPI(
 app.include_router(transactions_router)
 app.include_router(admin_router)
 app.include_router(client_auth_router)
+app.include_router(t24_mock.router)
+app.include_router(t24_integration.router)
+app.include_router(feedback.router)
+app.include_router(learning.router)
 
 # CORS middleware
 app.add_middleware(

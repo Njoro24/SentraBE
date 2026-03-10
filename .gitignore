@@ -85,3 +85,5 @@ data/creditcardfraud.zip
 *.pkl
 __pycache__/
 .env
+api/transactions.py
+clear_database.py

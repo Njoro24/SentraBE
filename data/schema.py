@@ -144,6 +144,26 @@ class TrustedDevice(Base):
     
     client = relationship("Client", back_populates="trusted_devices")
 
+class AlertFeedback(Base):
+    __tablename__ = "alert_feedback"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"))
+    alert_id = Column(String, index=True)
+    transaction_id = Column(String, index=True)
+    marked_status = Column(String)  # correct, incorrect, escalate
+    analyst_notes = Column(Text, nullable=True)
+    original_risk_level = Column(String)  # LOW, MEDIUM, HIGH
+    original_recommendation = Column(String)  # APPROVE, FLAG, BLOCK
+    analyst_recommendation = Column(String, nullable=True)  # What analyst thinks it should be
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    client = relationship("Client", back_populates="alert_feedback")
+
+# Add relationship to Client
+Client.alert_feedback = relationship("AlertFeedback", back_populates="client")
+
 # Create tables
 def init_db():
     Base.metadata.create_all(bind=engine)

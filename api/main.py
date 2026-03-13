@@ -33,6 +33,8 @@ from api import feedback
 from api import learning
 from data.schema import get_db, init_db, Client, Transaction, FraudScore
 from models.features import FeatureEngineer
+from security.jwt_middleware import verify_jwt_token
+from security.audit_log import write_log
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -180,29 +182,37 @@ async def health_check(db: Session = Depends(get_db)):
 @app.post("/v1/score", response_model=ScoreResponse)
 async def score_transaction(
     request: TransactionRequest,
-    authorization: str = Header(None),
+    token_payload: dict = Depends(verify_jwt_token),
     db: Session = Depends(get_db)
 ):
     """
     Score a transaction for fraud risk.
-    
-    Requires authentication. Enforces subscription limits.
+
+    Requires JWT authentication. Enforces subscription limits.
     Returns a risk score (0-100) with signal breakdown.
     """
     
     # ─────────────────────────────────────────────────────────────────────────
-    # AUTHENTICATION & AUTHORIZATION
+    # AUDIT LOG: Score Request
     # ─────────────────────────────────────────────────────────────────────────
     
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid token")
+    write_log(
+        event_type="SCORE_REQUEST",
+        actor=token_payload.get("sub", "unknown"),
+        payload={
+            "transaction_id": request.transaction_id,
+            "amount": request.amount,
+            "role": token_payload.get("role", "unknown")
+        }
+    )
     
-    token = authorization.replace("Bearer ", "")
-    token_data = verify_token(token)
-    if not token_data:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    # ─────────────────────────────────────────────────────────────────────────
+    # AUTHORIZATION
+    # ─────────────────────────────────────────────────────────────────────────
     
-    client = db.query(Client).filter(Client.id == token_data.client_id).first()
+    # Get client from token subject
+    client_id = token_payload.get("sub")
+    client = db.query(Client).filter(Client.id == client_id).first()
     if not client or not client.is_active:
         raise HTTPException(status_code=403, detail="Client not found or inactive")
     

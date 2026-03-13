@@ -17,6 +17,8 @@ load_dotenv()
 from services.t24_adapter import T24Adapter, TransactionRequest
 from api.transactions import analyze_transaction
 from data.schema import get_db
+from security.field_encryptor import encrypt_transaction
+from security.audit_log import write_log
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +116,24 @@ async def get_t24_transactions(
             try:
                 txn_dict = T24Adapter.to_dict(txn_request)
                 
+                # ─────────────────────────────────────────────────────────────
+                # ENCRYPT SENSITIVE FIELDS
+                # ─────────────────────────────────────────────────────────────
+                encrypted_txn = encrypt_transaction(txn_dict)
+                
+                # ─────────────────────────────────────────────────────────────
+                # AUDIT LOG: Transaction Stored
+                # ─────────────────────────────────────────────────────────────
+                write_log(
+                    event_type="TRANSACTION_STORED",
+                    actor="t24_adapter",
+                    payload={
+                        "transaction_id": txn_request.transaction_id,
+                        "amount": txn_request.amount,
+                        "encrypted": True
+                    }
+                )
+                
                 # Load model
                 from api.transactions import fraud_model, load_fraud_model
                 import numpy as np
@@ -162,7 +182,7 @@ async def get_t24_transactions(
                         risk_score = int(y_pred_proba[0] * 30)
                     
                     scored_txn = {
-                        **txn_dict,
+                        **encrypted_txn,
                         "fraud_score": risk_score,
                         "risk_level": risk_level,
                         "recommendation": recommendation,
@@ -176,7 +196,7 @@ async def get_t24_transactions(
                     }
                 else:
                     scored_txn = {
-                        **txn_dict,
+                        **encrypted_txn,
                         "error": "Model not loaded",
                         "scored_at": datetime.now().isoformat()
                     }

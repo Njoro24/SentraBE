@@ -711,6 +711,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made by the Sentra Team**
+**Made by Yours Truly**
 
-Last Updated: March 2024 | Version: 1.0.0
+Last Updated: March 2026 | Version: 1.0.0

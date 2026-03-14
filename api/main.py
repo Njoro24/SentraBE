@@ -73,7 +73,7 @@ kafka_producer = None
 
 # Pydantic models
 class TransactionRequest(BaseModel):
-    transaction_id: str = Field(..., description="Unique transaction ID")
+    transaction_id: str = Field(..., min_length=1, description="Unique transaction ID")
     amount: float = Field(..., gt=0, description="Transaction amount in KES")
     device_id: str = Field(..., description="Device identifier")
     location: str = Field(..., description="Transaction location")
@@ -211,7 +211,7 @@ async def score_transaction(
     # ─────────────────────────────────────────────────────────────────────────
     
     # Get client from token subject
-    client_id = token_payload.get("sub")
+    client_id = token_payload.get("client_id") or token_payload.get("sub")
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client or not client.is_active:
         raise HTTPException(status_code=403, detail="Client not found or inactive")

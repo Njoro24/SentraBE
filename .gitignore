@@ -87,3 +87,5 @@ __pycache__/
 .env
 api/transactions.py
 clear_database.py
+fraud_model.pkl
+models/xgboost_model.pkl

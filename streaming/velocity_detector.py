@@ -13,6 +13,24 @@ from collections import defaultdict
 from datetime import datetime
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import KafkaError
+from dotenv import load_dotenv
+load_dotenv()
+
+KAFKA_SECURITY_PROTOCOL = os.getenv("KAFKA_SECURITY_PROTOCOL", "PLAINTEXT")
+KAFKA_SASL_MECHANISM    = os.getenv("KAFKA_SASL_MECHANISM", "PLAIN")
+KAFKA_SASL_USERNAME     = os.getenv("KAFKA_SASL_USERNAME", "")
+KAFKA_SASL_PASSWORD     = os.getenv("KAFKA_SASL_PASSWORD", "")
+
+def kafka_sasl_config():
+    if KAFKA_SECURITY_PROTOCOL == "SASL_PLAINTEXT":
+        return {
+            "security_protocol": KAFKA_SECURITY_PROTOCOL,
+            "sasl_mechanism":    KAFKA_SASL_MECHANISM,
+            "sasl_plain_username": KAFKA_SASL_USERNAME,
+            "sasl_plain_password": KAFKA_SASL_PASSWORD,
+        }
+    return {}
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)

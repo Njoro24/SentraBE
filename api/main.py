@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Header
+from fastapi import FastAPI, Depends, HTTPException, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
@@ -36,8 +36,30 @@ from models.features import FeatureEngineer
 from security.jwt_middleware import verify_jwt_token
 from security.audit_log import write_log
 from dotenv import load_dotenv
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 load_dotenv()
+
+KAFKA_SECURITY_PROTOCOL = os.getenv("KAFKA_SECURITY_PROTOCOL", "PLAINTEXT")
+KAFKA_SASL_MECHANISM    = os.getenv("KAFKA_SASL_MECHANISM", "PLAIN")
+KAFKA_SASL_USERNAME     = os.getenv("KAFKA_SASL_USERNAME", "")
+KAFKA_SASL_PASSWORD     = os.getenv("KAFKA_SASL_PASSWORD", "")
+
+def kafka_sasl_config():
+    if KAFKA_SECURITY_PROTOCOL == "SASL_PLAINTEXT":
+        return {
+            "security_protocol": KAFKA_SECURITY_PROTOCOL,
+            "sasl_mechanism":    KAFKA_SASL_MECHANISM,
+            "sasl_plain_username": KAFKA_SASL_USERNAME,
+            "sasl_plain_password": KAFKA_SASL_PASSWORD,
+        }
+    return {}
+
+
+# Rate limiter — keyed by IP address
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -45,6 +67,8 @@ app = FastAPI(
     description="Real-time fraud detection platform",
     version="1.0.0"
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Include routers
 app.include_router(transactions_router)
@@ -150,7 +174,8 @@ async def startup_event():
             bootstrap_servers=['localhost:9092'],
             value_serializer=lambda v: json.dumps(v).encode('utf-8'),
             acks='all',
-            retries=3
+            retries=3,
+            **kafka_sasl_config()
         )
         print("✓ Kafka producer ready for alerts")
     except Exception as e:
@@ -180,8 +205,10 @@ async def health_check(db: Session = Depends(get_db)):
 
 # Main scoring endpoint
 @app.post("/v1/score", response_model=ScoreResponse)
+@limiter.limit("60/minute")
 async def score_transaction(
-    request: TransactionRequest,
+    request: Request,
+    body: TransactionRequest,
     token_payload: dict = Depends(verify_jwt_token),
     db: Session = Depends(get_db)
 ):
@@ -200,8 +227,8 @@ async def score_transaction(
         event_type="SCORE_REQUEST",
         actor=token_payload.get("sub", "unknown"),
         payload={
-            "transaction_id": request.transaction_id,
-            "amount": request.amount,
+            "transaction_id": body.transaction_id,
+            "amount": body.amount,
             "role": token_payload.get("role", "unknown")
         }
     )
@@ -244,10 +271,10 @@ async def score_transaction(
         feature_engineer = TransactionFeatureEngineer(db=db)
         X = feature_engineer.engineer_features(
             client_id=client.id,
-            amount=request.amount,
+            amount=body.amount,
             merchant_category=getattr(request, 'merchant_category', 'General'),
-            location=request.location,
-            device_id=request.device_id,
+            location=body.location,
+            device_id=body.device_id,
             country_code=getattr(request, 'country', 'KE'),
             client_created_at=client.created_at
         )
@@ -291,7 +318,7 @@ async def score_transaction(
         
         # Create response
         response = ScoreResponse(
-            transaction_id=request.transaction_id,
+            transaction_id=body.transaction_id,
             risk_score=risk_score,
             risk_level=risk_level,
             signals=signals,
@@ -304,18 +331,18 @@ async def score_transaction(
             # Store transaction
             transaction = Transaction(
                 client_id=client.id,
-                transaction_id=request.transaction_id,
-                amount=request.amount,
-                device_id=request.device_id,
-                location=request.location,
-                timestamp=request.timestamp
+                transaction_id=body.transaction_id,
+                amount=body.amount,
+                device_id=body.device_id,
+                location=body.location,
+                timestamp=body.timestamp
             )
             db.add(transaction)
             
             # Store score
             fraud_score = FraudScore(
                 client_id=client.id,
-                transaction_id=request.transaction_id,
+                transaction_id=body.transaction_id,
                 risk_score=risk_score,
                 risk_level=risk_level,
                 velocity_signal=signals.velocity,
@@ -338,13 +365,13 @@ async def score_transaction(
             if kafka_producer:
                 try:
                     kafka_event = {
-                        'transaction_id': request.transaction_id,
+                        'transaction_id': body.transaction_id,
                         'client_id': client.id,
-                        'amount': request.amount,
+                        'amount': body.amount,
                         'risk_score': float(risk_score),
                         'risk_level': risk_level,
                         'recommendation': recommendation,
-                        'timestamp': request.timestamp.isoformat(),
+                        'timestamp': body.timestamp.isoformat(),
                         'signals': {
                             'velocity': signals.velocity,
                             'amount_anomaly': signals.amount_anomaly,
@@ -355,7 +382,7 @@ async def score_transaction(
                     print(f"DEBUG: Sending to Kafka: {kafka_event}")
                     future = kafka_producer.send('fraud-alerts', kafka_event)
                     future.get(timeout=5)
-                    print(f"✓ Streamed to Kafka: {request.transaction_id}")
+                    print(f"✓ Streamed to Kafka: {body.transaction_id}")
                 except Exception as e:
                     print(f"✗ Kafka error: {type(e).__name__}: {e}")
             else:

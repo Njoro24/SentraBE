@@ -44,17 +44,23 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: SASL_PLAINTEXT://kafka:29092,SASL_PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_PLAINTEXT_HOST:SASL_PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: SASL_PLAINTEXT
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_jaas.conf"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-      KAFKA_LOG_RETENTION_HOURS: 168  # 7 days
+      KAFKA_LOG_RETENTION_HOURS: 168
+    volumes:
+      - ./config/kafka_jaas.conf:/etc/kafka/kafka_jaas.conf
+      - ./config/client.properties:/etc/kafka/client.properties
     ports:
       - "9092:9092"
       - "29092:29092"
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 --command-config /etc/kafka/client.properties || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -64,16 +70,37 @@ services:
     image: python:3.8-slim
     container_name: sentra-kafka-init
     depends_on:
-      kafka:
-        condition: service_healthy
+      - kafka
     volumes:
       - ./scripts:/scripts
     command: >
-      bash -c "pip install kafka-python -q &&
+      bash -c "pip install kafka-python python-dotenv -q &&
                python /scripts/init_kafka_topics.py"
     restart: "no"
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+  # Velocity spike detector — production streaming service
+  velocity-detector:
+    image: python:3.8-slim
+    container_name: sentra-velocity-detector
+    depends_on:
+      - kafka
+    volumes:
+      - ./streaming:/app/streaming
+      - ./requirements.txt:/app/requirements.txt
+    working_dir: /app
+    command: >
+      bash -c "pip install kafka-python python-dotenv -q &&
+               python streaming/velocity_detector.py"
+    restart: unless-stopped
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "velocity_detector.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   postgres_data:

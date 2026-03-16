@@ -220,3 +220,33 @@ class TestPhase1ExtremeValues:
         )
         assert response.status_code == 200
         assert response.json()["signals"]["device_new"] > 0, "Expected device_new > 0 for a brand new device"
+
+
+class TestPhase1RateLimiting:
+
+    async def test_rate_limit_returns_429_when_exceeded(
+        self, async_client, valid_token
+    ):
+        """Exceed 60/minute limit — should get 429"""
+        payload = {
+            "transaction_id": "TXN-RATE-TEST",
+            "amount": 1000.0,
+            "location": "Nairobi, KE",
+            "device_id": "device-rate-test",
+            "timestamp": "2024-01-01T10:00:00Z"
+        }
+        responses = []
+        for i in range(65):
+            payload["transaction_id"] = f"TXN-RATE-{i}"
+            r = await async_client.post(
+                "/v1/score",
+                json=payload,
+                headers={"Authorization": f"Bearer {valid_token}"}
+            )
+            responses.append(r.status_code)
+
+        status_codes = set(responses)
+        assert 429 in status_codes, (
+            f"Expected 429 after 60 requests but got only: {status_codes}"
+        )
+        print(f"\n  Got 429 after rate limit exceeded — rate limiting confirmed")

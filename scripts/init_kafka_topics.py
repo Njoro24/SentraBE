@@ -6,6 +6,24 @@ Safe to run multiple times — skips existing topics.
 from kafka.admin import KafkaAdminClient, NewTopic
 from kafka.errors import TopicAlreadyExistsError
 import os, sys, time
+from dotenv import load_dotenv
+load_dotenv()
+
+KAFKA_SECURITY_PROTOCOL = os.getenv("KAFKA_SECURITY_PROTOCOL", "PLAINTEXT")
+KAFKA_SASL_MECHANISM    = os.getenv("KAFKA_SASL_MECHANISM", "PLAIN")
+KAFKA_SASL_USERNAME     = os.getenv("KAFKA_SASL_USERNAME", "")
+KAFKA_SASL_PASSWORD     = os.getenv("KAFKA_SASL_PASSWORD", "")
+
+def kafka_sasl_config():
+    if KAFKA_SECURITY_PROTOCOL == "SASL_PLAINTEXT":
+        return {
+            "security_protocol": KAFKA_SECURITY_PROTOCOL,
+            "sasl_mechanism":    KAFKA_SASL_MECHANISM,
+            "sasl_plain_username": KAFKA_SASL_USERNAME,
+            "sasl_plain_password": KAFKA_SASL_PASSWORD,
+        }
+    return {}
+
 
 BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092").split(",")
 TOPICS = [

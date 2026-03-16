@@ -58,6 +58,22 @@ def init_kafka_producer():
     try:
         import os
         from dotenv import load_dotenv
+
+KAFKA_SECURITY_PROTOCOL = os.getenv("KAFKA_SECURITY_PROTOCOL", "PLAINTEXT")
+KAFKA_SASL_MECHANISM    = os.getenv("KAFKA_SASL_MECHANISM", "PLAIN")
+KAFKA_SASL_USERNAME     = os.getenv("KAFKA_SASL_USERNAME", "")
+KAFKA_SASL_PASSWORD     = os.getenv("KAFKA_SASL_PASSWORD", "")
+
+def kafka_sasl_config():
+    if KAFKA_SECURITY_PROTOCOL == "SASL_PLAINTEXT":
+        return {
+            "security_protocol": KAFKA_SECURITY_PROTOCOL,
+            "sasl_mechanism":    KAFKA_SASL_MECHANISM,
+            "sasl_plain_username": KAFKA_SASL_USERNAME,
+            "sasl_plain_password": KAFKA_SASL_PASSWORD,
+        }
+    return {}
+
         
         load_dotenv()
         
@@ -72,7 +88,8 @@ def init_kafka_producer():
             acks='all',
             retries=3,
             request_timeout_ms=10000,
-            connections_max_idle_ms=540000
+            connections_max_idle_ms=540000,
+            **kafka_sasl_config()
         )
         print("✓ Kafka producer initialized successfully")
         return True

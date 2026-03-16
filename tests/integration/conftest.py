@@ -73,3 +73,38 @@ def sample_transaction():
         "device_id": "device-test-123",
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
+
+
+@pytest.fixture(autouse=False)
+def reset_subscription_usage(async_client, valid_token):
+    """
+    Use this fixture in any test that needs a clean subscription slate.
+    Directly zeros out this month fraud_scores for the test client
+    so the 50k starter limit is never hit during testing.
+    """
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+    from data.schema import get_db, FraudScore
+    from datetime import date, datetime
+    db = next(get_db())
+    try:
+        today = date.today()
+        first_day = datetime.combine(today.replace(day=1), datetime.min.time())
+        db.query(FraudScore).filter(
+            FraudScore.client_id == TEST_CLIENT_ID,
+            FraudScore.created_at >= first_day
+        ).delete()
+        db.commit()
+    finally:
+        db.close()
+    yield
+
+
+@pytest.fixture
+def unlimited_client_token():
+    """
+    Token for a hypothetical enterprise client — use when testing
+    high-volume scenarios to avoid hitting the starter tier limit.
+    For now maps to same client but signals intent in the test.
+    """
+    return make_token(TEST_CLIENT_ID, TEST_CLIENT_EMAIL)

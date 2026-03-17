@@ -13,10 +13,29 @@ from kafka import KafkaProducer, KafkaConsumer
 from kafka.admin import KafkaAdminClient, NewTopic
 from kafka.errors import KafkaError
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 BOOTSTRAP_SERVERS = ["localhost:9092"]
 TOPIC_TRANSACTIONS = "sentra.transactions.raw"
 TOPIC_ALERTS       = "sentra.alerts.fraud"
 TOPIC_SCORES       = "sentra.scores.output"
+
+KAFKA_SECURITY_PROTOCOL = os.getenv("KAFKA_SECURITY_PROTOCOL", "PLAINTEXT")
+KAFKA_SASL_MECHANISM    = os.getenv("KAFKA_SASL_MECHANISM", "PLAIN")
+KAFKA_SASL_USERNAME     = os.getenv("KAFKA_SASL_USERNAME", "")
+KAFKA_SASL_PASSWORD     = os.getenv("KAFKA_SASL_PASSWORD", "")
+
+def sasl_config():
+    if KAFKA_SECURITY_PROTOCOL == "SASL_PLAINTEXT":
+        return {
+            "security_protocol": KAFKA_SECURITY_PROTOCOL,
+            "sasl_mechanism":    KAFKA_SASL_MECHANISM,
+            "sasl_plain_username": KAFKA_SASL_USERNAME,
+            "sasl_plain_password": KAFKA_SASL_PASSWORD,
+        }
+    return {}
 
 
 def make_producer():
@@ -25,7 +44,8 @@ def make_producer():
         value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         acks="all",
         retries=3,
-        request_timeout_ms=10000
+        request_timeout_ms=10000,
+        **sasl_config()
     )
 
 
@@ -37,7 +57,8 @@ def make_consumer(topic, group_id, timeout_ms=5000):
         auto_offset_reset="earliest",
         enable_auto_commit=True,
         value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-        consumer_timeout_ms=timeout_ms
+        consumer_timeout_ms=timeout_ms,
+        **sasl_config()
     )
 
 
@@ -63,7 +84,11 @@ class TestPhase2KafkaConnection:
             pytest.fail(f"Cannot connect to Kafka at {BOOTSTRAP_SERVERS}: {e}")
 
     def test_all_required_topics_exist(self):
-        consumer = KafkaConsumer(bootstrap_servers=BOOTSTRAP_SERVERS)
+        consumer = KafkaConsumer(
+            bootstrap_servers=BOOTSTRAP_SERVERS,
+            group_id="test-topic-check",
+            **sasl_config()
+        )
         topics = consumer.topics()
         consumer.close()
         for topic in [TOPIC_TRANSACTIONS, TOPIC_ALERTS, TOPIC_SCORES]:
@@ -205,6 +230,7 @@ class TestPhase2VelocityDetection:
                 consumer_timeout_ms=timeout * 1000,
                 fetch_max_wait_ms=100,
                 max_poll_records=50,
+                **sasl_config()
             )
             # Force partition assignment before signaling ready
             while not c.assignment():
@@ -239,6 +265,7 @@ class TestPhase2VelocityDetection:
             bootstrap_servers=BOOTSTRAP_SERVERS,
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             acks=1,
+            **sasl_config()
         )
         for i in range(n_spike):
             msg = make_transaction(account_id=spike_account, idx=i)
@@ -282,6 +309,7 @@ class TestPhase2VelocityDetection:
                 enable_auto_commit=False,
                 value_deserializer=lambda m: json.loads(m.decode("utf-8")),
                 consumer_timeout_ms=8000,
+                **sasl_config()
             )
             while not c.assignment():
                 c.poll(timeout_ms=500)

@@ -44,23 +44,20 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: SASL_PLAINTEXT://kafka:29092,SASL_PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_PLAINTEXT_HOST:SASL_PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: SASL_PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:SASL_PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
-      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
-      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_jaas.conf"
+      KAFKA_LISTENER_NAME_EXTERNAL_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_LISTENER_NAME_EXTERNAL_PLAIN_SASL_JAAS_CONFIG: org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="sentra-admin-2024" user_admin="sentra-admin-2024" user_sentra="sentra-client-2024";
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       KAFKA_LOG_RETENTION_HOURS: 168
-    volumes:
-      - ./config/kafka_jaas.conf:/etc/kafka/kafka_jaas.conf
-      - ./config/client.properties:/etc/kafka/client.properties
     ports:
       - "9092:9092"
       - "29092:29092"
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 --command-config /etc/kafka/client.properties || exit 1"]
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:29092 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -96,11 +93,13 @@ services:
     restart: unless-stopped
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_SECURITY_PROTOCOL: PLAINTEXT
     healthcheck:
-      test: ["CMD", "pgrep", "-f", "velocity_detector.py"]
-      interval: 10s
+      test: ["CMD", "python", "-c", "import os,sys; procs=[open(f'/proc/{p}/cmdline').read() for p in os.listdir('/proc') if p.isdigit() and os.path.exists(f'/proc/{p}/cmdline')]; sys.exit(0 if any('velocity_detector' in p for p in procs) else 1)"]
+      interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 30s
 
 volumes:
   postgres_data:

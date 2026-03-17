@@ -1,0 +1,7 @@
+KafkaServer {
+    org.apache.kafka.common.security.plain.PlainLoginModule required
+    username="admin"
+    password="CHANGE_ME_ADMIN_PASSWORD"
+    user_admin="CHANGE_ME_ADMIN_PASSWORD"
+    user_sentra="CHANGE_ME_CLIENT_PASSWORD";
+};

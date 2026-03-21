@@ -66,19 +66,19 @@ class Neo4jLoader:
         with self.driver.session() as session:
             for txn in transactions:
                 session.run("""
-                    MATCH (from:Account {id: $from})
-                    MATCH (to:Account {id: $to})
-                    CREATE (from)-[t:TRANSFERS_TO {
+                    MATCH (a:Account {id: $from_account})
+                    MATCH (b:Account {id: $to_account})
+                    CREATE (a)-[t:TRANSFERS_TO {
                         txn_id: $txn_id,
                         amount: $amount,
                         timestamp: $timestamp,
                         is_fraud: $is_fraud,
                         ring_id: $ring_id,
                         type: $type
-                    }]->(to)
+                    }]->(b)
                 """,
-                    from_=txn['from_account'],
-                    to=txn['to_account'],
+                    from_account=txn['from_account'],
+                    to_account=txn['to_account'],
                     txn_id=txn['id'],
                     amount=txn['amount'],
                     timestamp=txn['timestamp'],

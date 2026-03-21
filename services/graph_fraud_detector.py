@@ -38,8 +38,8 @@ class GraphFraudDetector:
             # Find all cycles of length 2-10
             result = session.run("""
                 MATCH cycle = (a:Account)-[*2..10]->(a)
-                WHERE all(rel in relationships(cycle) | rel.is_fraud = true)
-                RETURN [n in nodes(cycle) | n.id] as accounts, length(cycle) as cycle_length
+                WHERE all(rel IN relationships(cycle) WHERE rel.is_fraud = true)
+                RETURN [n IN nodes(cycle) | n.id] as accounts, length(cycle) as cycle_length
                 LIMIT 20
             """)
 

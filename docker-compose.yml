@@ -101,8 +101,29 @@ services:
       retries: 3
       start_period: 30s
 
+  # Neo4j Graph Database — fraud ring detection
+  neo4j:
+    image: neo4j:4.4
+    container_name: sentra-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/sentra-neo4j-2024
+      NEO4J_dbms_memory_pagecache_size: 512M
+      NEO4J_dbms_memory_heap_max__size: 512M
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "sentra-neo4j-2024", "RETURN 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
 volumes:
   postgres_data:
+  neo4j_data:
 
 networks:
   default:

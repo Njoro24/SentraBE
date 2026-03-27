@@ -1,0 +1,902 @@
+[
+  {
+    "id": "account_000",
+    "phone_number": "+254772097957",
+    "name": "Fraudster_0",
+    "is_fraudulent": true,
+    "ring_id": 0,
+    "created_at": "2025-07-24T12:59:39.296468",
+    "balance": 932280
+  },
+  {
+    "id": "account_001",
+    "phone_number": "+254773159057",
+    "name": "Fraudster_1",
+    "is_fraudulent": true,
+    "ring_id": 0,
+    "created_at": "2025-08-12T12:59:39.296512",
+    "balance": 387936
+  },
+  {
+    "id": "account_002",
+    "phone_number": "+254780202018",
+    "name": "Fraudster_2",
+    "is_fraudulent": true,
+    "ring_id": 0,
+    "created_at": "2025-12-20T12:59:39.296532",
+    "balance": 818527
+  },
+  {
+    "id": "account_003",
+    "phone_number": "+254780226658",
+    "name": "Fraudster_3",
+    "is_fraudulent": true,
+    "ring_id": 0,
+    "created_at": "2025-07-28T12:59:39.296547",
+    "balance": 581127
+  },
+  {
+    "id": "account_004",
+    "phone_number": "+254710054066",
+    "name": "Fraudster_4",
+    "is_fraudulent": true,
+    "ring_id": 0,
+    "created_at": "2026-03-03T12:59:39.296567",
+    "balance": 11925
+  },
+  {
+    "id": "account_005",
+    "phone_number": "+254723638219",
+    "name": "Fraudster_5",
+    "is_fraudulent": true,
+    "ring_id": 1,
+    "created_at": "2026-01-09T12:59:39.296582",
+    "balance": 211998
+  },
+  {
+    "id": "account_006",
+    "phone_number": "+254773778619",
+    "name": "Fraudster_6",
+    "is_fraudulent": true,
+    "ring_id": 1,
+    "created_at": "2026-02-03T12:59:39.296596",
+    "balance": 492571
+  },
+  {
+    "id": "account_007",
+    "phone_number": "+254716969347",
+    "name": "Fraudster_7",
+    "is_fraudulent": true,
+    "ring_id": 1,
+    "created_at": "2025-03-30T12:59:39.296613",
+    "balance": 393902
+  },
+  {
+    "id": "account_008",
+    "phone_number": "+254763406234",
+    "name": "Fraudster_8",
+    "is_fraudulent": true,
+    "ring_id": 1,
+    "created_at": "2026-03-01T12:59:39.296636",
+    "balance": 776889
+  },
+  {
+    "id": "account_009",
+    "phone_number": "+254724070035",
+    "name": "Fraudster_9",
+    "is_fraudulent": true,
+    "ring_id": 1,
+    "created_at": "2026-02-20T12:59:39.296651",
+    "balance": 340576
+  },
+  {
+    "id": "account_010",
+    "phone_number": "+254748092098",
+    "name": "Fraudster_10",
+    "is_fraudulent": true,
+    "ring_id": 2,
+    "created_at": "2025-10-25T12:59:39.296669",
+    "balance": 355154
+  },
+  {
+    "id": "account_011",
+    "phone_number": "+254707890524",
+    "name": "Fraudster_11",
+    "is_fraudulent": true,
+    "ring_id": 2,
+    "created_at": "2025-04-18T12:59:39.296698",
+    "balance": 137419
+  },
+  {
+    "id": "account_012",
+    "phone_number": "+254789910121",
+    "name": "Fraudster_12",
+    "is_fraudulent": true,
+    "ring_id": 2,
+    "created_at": "2025-05-12T12:59:39.296723",
+    "balance": 532876
+  },
+  {
+    "id": "account_013",
+    "phone_number": "+254736861868",
+    "name": "Fraudster_13",
+    "is_fraudulent": true,
+    "ring_id": 2,
+    "created_at": "2025-05-29T12:59:39.296747",
+    "balance": 424741
+  },
+  {
+    "id": "account_014",
+    "phone_number": "+254770375978",
+    "name": "Fraudster_14",
+    "is_fraudulent": true,
+    "ring_id": 2,
+    "created_at": "2026-01-23T12:59:39.296769",
+    "balance": 124112
+  },
+  {
+    "id": "account_015",
+    "phone_number": "+254795018235",
+    "name": "Fraudster_15",
+    "is_fraudulent": true,
+    "ring_id": 3,
+    "created_at": "2025-12-03T12:59:39.296800",
+    "balance": 837523
+  },
+  {
+    "id": "account_016",
+    "phone_number": "+254746384332",
+    "name": "Fraudster_16",
+    "is_fraudulent": true,
+    "ring_id": 3,
+    "created_at": "2025-05-02T12:59:39.296827",
+    "balance": 398858
+  },
+  {
+    "id": "account_017",
+    "phone_number": "+254721258715",
+    "name": "Fraudster_17",
+    "is_fraudulent": true,
+    "ring_id": 3,
+    "created_at": "2026-03-18T12:59:39.296858",
+    "balance": 903139
+  },
+  {
+    "id": "account_018",
+    "phone_number": "+254700244698",
+    "name": "Fraudster_18",
+    "is_fraudulent": true,
+    "ring_id": 3,
+    "created_at": "2026-01-09T12:59:39.296884",
+    "balance": 896781
+  },
+  {
+    "id": "account_019",
+    "phone_number": "+254720513196",
+    "name": "Fraudster_19",
+    "is_fraudulent": true,
+    "ring_id": 3,
+    "created_at": "2025-09-08T12:59:39.296908",
+    "balance": 262637
+  },
+  {
+    "id": "account_020",
+    "phone_number": "+254780163122",
+    "name": "Fraudster_20",
+    "is_fraudulent": true,
+    "ring_id": 4,
+    "created_at": "2025-07-10T12:59:39.296932",
+    "balance": 972607
+  },
+  {
+    "id": "account_021",
+    "phone_number": "+254718754748",
+    "name": "Fraudster_21",
+    "is_fraudulent": true,
+    "ring_id": 4,
+    "created_at": "2025-07-07T12:59:39.296956",
+    "balance": 680225
+  },
+  {
+    "id": "account_022",
+    "phone_number": "+254726925948",
+    "name": "Fraudster_22",
+    "is_fraudulent": true,
+    "ring_id": 4,
+    "created_at": "2025-08-29T12:59:39.296980",
+    "balance": 786000
+  },
+  {
+    "id": "account_023",
+    "phone_number": "+254786642803",
+    "name": "Fraudster_23",
+    "is_fraudulent": true,
+    "ring_id": 4,
+    "created_at": "2025-04-17T12:59:39.297004",
+    "balance": 557078
+  },
+  {
+    "id": "account_024",
+    "phone_number": "+254742287558",
+    "name": "Fraudster_24",
+    "is_fraudulent": true,
+    "ring_id": 4,
+    "created_at": "2025-08-11T12:59:39.297026",
+    "balance": 921113
+  },
+  {
+    "id": "account_025",
+    "phone_number": "+254764957136",
+    "name": "Fraudster_25",
+    "is_fraudulent": true,
+    "ring_id": 5,
+    "created_at": "2025-03-23T12:59:39.297502",
+    "balance": 495668
+  },
+  {
+    "id": "account_026",
+    "phone_number": "+254768864274",
+    "name": "Fraudster_26",
+    "is_fraudulent": true,
+    "ring_id": 5,
+    "created_at": "2025-08-06T12:59:39.297535",
+    "balance": 915472
+  },
+  {
+    "id": "account_027",
+    "phone_number": "+254704964767",
+    "name": "Fraudster_27",
+    "is_fraudulent": true,
+    "ring_id": 5,
+    "created_at": "2025-12-21T12:59:39.297561",
+    "balance": 284650
+  },
+  {
+    "id": "account_028",
+    "phone_number": "+254719133907",
+    "name": "Fraudster_28",
+    "is_fraudulent": true,
+    "ring_id": 5,
+    "created_at": "2025-09-17T12:59:39.297585",
+    "balance": 923332
+  },
+  {
+    "id": "account_029",
+    "phone_number": "+254774991111",
+    "name": "Fraudster_29",
+    "is_fraudulent": true,
+    "ring_id": 5,
+    "created_at": "2025-08-02T12:59:39.297609",
+    "balance": 433588
+  },
+  {
+    "id": "account_030",
+    "phone_number": "+254717976547",
+    "name": "Fraudster_30",
+    "is_fraudulent": true,
+    "ring_id": 6,
+    "created_at": "2025-11-06T12:59:39.297641",
+    "balance": 267691
+  },
+  {
+    "id": "account_031",
+    "phone_number": "+254769625658",
+    "name": "Fraudster_31",
+    "is_fraudulent": true,
+    "ring_id": 6,
+    "created_at": "2025-04-09T12:59:39.297673",
+    "balance": 617045
+  },
+  {
+    "id": "account_032",
+    "phone_number": "+254731593969",
+    "name": "Fraudster_32",
+    "is_fraudulent": true,
+    "ring_id": 6,
+    "created_at": "2025-10-23T12:59:39.297700",
+    "balance": 25510
+  },
+  {
+    "id": "account_033",
+    "phone_number": "+254742417879",
+    "name": "Fraudster_33",
+    "is_fraudulent": true,
+    "ring_id": 6,
+    "created_at": "2025-05-26T12:59:39.297718",
+    "balance": 68553
+  },
+  {
+    "id": "account_034",
+    "phone_number": "+254708982932",
+    "name": "Fraudster_34",
+    "is_fraudulent": true,
+    "ring_id": 6,
+    "created_at": "2026-01-22T12:59:39.297732",
+    "balance": 15865
+  },
+  {
+    "id": "account_035",
+    "phone_number": "+254740445815",
+    "name": "Fraudster_35",
+    "is_fraudulent": true,
+    "ring_id": 7,
+    "created_at": "2025-04-16T12:59:39.297745",
+    "balance": 34508
+  },
+  {
+    "id": "account_036",
+    "phone_number": "+254794844403",
+    "name": "Fraudster_36",
+    "is_fraudulent": true,
+    "ring_id": 7,
+    "created_at": "2025-06-09T12:59:39.297761",
+    "balance": 511834
+  },
+  {
+    "id": "account_037",
+    "phone_number": "+254716703517",
+    "name": "Fraudster_37",
+    "is_fraudulent": true,
+    "ring_id": 7,
+    "created_at": "2025-04-14T12:59:39.297775",
+    "balance": 587385
+  },
+  {
+    "id": "account_038",
+    "phone_number": "+254799690611",
+    "name": "Fraudster_38",
+    "is_fraudulent": true,
+    "ring_id": 7,
+    "created_at": "2025-07-13T12:59:39.297788",
+    "balance": 181497
+  },
+  {
+    "id": "account_039",
+    "phone_number": "+254751088286",
+    "name": "Fraudster_39",
+    "is_fraudulent": true,
+    "ring_id": 7,
+    "created_at": "2026-02-20T12:59:39.297801",
+    "balance": 560546
+  },
+  {
+    "id": "account_040",
+    "phone_number": "+254716236739",
+    "name": "Fraudster_40",
+    "is_fraudulent": true,
+    "ring_id": 8,
+    "created_at": "2025-06-13T12:59:39.297819",
+    "balance": 560913
+  },
+  {
+    "id": "account_041",
+    "phone_number": "+254789761162",
+    "name": "Fraudster_41",
+    "is_fraudulent": true,
+    "ring_id": 8,
+    "created_at": "2025-09-18T12:59:39.297860",
+    "balance": 75448
+  },
+  {
+    "id": "account_042",
+    "phone_number": "+254763222076",
+    "name": "Fraudster_42",
+    "is_fraudulent": true,
+    "ring_id": 8,
+    "created_at": "2025-08-15T12:59:39.297877",
+    "balance": 938282
+  },
+  {
+    "id": "account_043",
+    "phone_number": "+254794318362",
+    "name": "Fraudster_43",
+    "is_fraudulent": true,
+    "ring_id": 8,
+    "created_at": "2025-09-24T12:59:39.297895",
+    "balance": 485315
+  },
+  {
+    "id": "account_044",
+    "phone_number": "+254752982188",
+    "name": "Fraudster_44",
+    "is_fraudulent": true,
+    "ring_id": 8,
+    "created_at": "2025-07-26T12:59:39.297909",
+    "balance": 822432
+  },
+  {
+    "id": "account_045",
+    "phone_number": "+254731199718",
+    "name": "Fraudster_45",
+    "is_fraudulent": true,
+    "ring_id": 9,
+    "created_at": "2025-07-11T12:59:39.297923",
+    "balance": 584528
+  },
+  {
+    "id": "account_046",
+    "phone_number": "+254753487724",
+    "name": "Fraudster_46",
+    "is_fraudulent": true,
+    "ring_id": 9,
+    "created_at": "2025-09-27T12:59:39.297955",
+    "balance": 872997
+  },
+  {
+    "id": "account_047",
+    "phone_number": "+254745451189",
+    "name": "Fraudster_47",
+    "is_fraudulent": true,
+    "ring_id": 9,
+    "created_at": "2026-03-04T12:59:39.297985",
+    "balance": 847897
+  },
+  {
+    "id": "account_048",
+    "phone_number": "+254758649328",
+    "name": "Fraudster_48",
+    "is_fraudulent": true,
+    "ring_id": 9,
+    "created_at": "2025-12-29T12:59:39.298010",
+    "balance": 391257
+  },
+  {
+    "id": "account_049",
+    "phone_number": "+254715736573",
+    "name": "Fraudster_49",
+    "is_fraudulent": true,
+    "ring_id": 9,
+    "created_at": "2025-08-07T12:59:39.298033",
+    "balance": 789478
+  },
+  {
+    "id": "account_050",
+    "phone_number": "+254746665337",
+    "name": "Customer_50",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-09-09T12:59:39.298061",
+    "balance": 2361489
+  },
+  {
+    "id": "account_051",
+    "phone_number": "+254754353230",
+    "name": "Customer_51",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-04-21T12:59:39.298083",
+    "balance": 3327038
+  },
+  {
+    "id": "account_052",
+    "phone_number": "+254760649717",
+    "name": "Customer_52",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-02-21T12:59:39.298106",
+    "balance": 4076339
+  },
+  {
+    "id": "account_053",
+    "phone_number": "+254720126769",
+    "name": "Customer_53",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-01-21T12:59:39.298127",
+    "balance": 4753859
+  },
+  {
+    "id": "account_054",
+    "phone_number": "+254758840190",
+    "name": "Customer_54",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-01-02T12:59:39.298149",
+    "balance": 3205594
+  },
+  {
+    "id": "account_055",
+    "phone_number": "+254729908506",
+    "name": "Customer_55",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-05-31T12:59:39.298172",
+    "balance": 64586
+  },
+  {
+    "id": "account_056",
+    "phone_number": "+254749307308",
+    "name": "Customer_56",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-12-21T12:59:39.298220",
+    "balance": 1909812
+  },
+  {
+    "id": "account_057",
+    "phone_number": "+254785971748",
+    "name": "Customer_57",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-09-26T12:59:39.298249",
+    "balance": 1996344
+  },
+  {
+    "id": "account_058",
+    "phone_number": "+254746693291",
+    "name": "Customer_58",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-03-22T12:59:39.298276",
+    "balance": 2978364
+  },
+  {
+    "id": "account_059",
+    "phone_number": "+254711312190",
+    "name": "Customer_59",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-09-12T12:59:39.298303",
+    "balance": 1059938
+  },
+  {
+    "id": "account_060",
+    "phone_number": "+254759902741",
+    "name": "Customer_60",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-01-05T12:59:39.298330",
+    "balance": 4284408
+  },
+  {
+    "id": "account_061",
+    "phone_number": "+254794140030",
+    "name": "Customer_61",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-04-05T12:59:39.298350",
+    "balance": 2141529
+  },
+  {
+    "id": "account_062",
+    "phone_number": "+254748165495",
+    "name": "Customer_62",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-03-13T12:59:39.298373",
+    "balance": 3328555
+  },
+  {
+    "id": "account_063",
+    "phone_number": "+254715098486",
+    "name": "Customer_63",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-10-20T12:59:39.298404",
+    "balance": 4360648
+  },
+  {
+    "id": "account_064",
+    "phone_number": "+254710649560",
+    "name": "Customer_64",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-03-30T12:59:39.298428",
+    "balance": 2625224
+  },
+  {
+    "id": "account_065",
+    "phone_number": "+254702683316",
+    "name": "Customer_65",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-11-21T12:59:39.298459",
+    "balance": 4350969
+  },
+  {
+    "id": "account_066",
+    "phone_number": "+254742732650",
+    "name": "Customer_66",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-07-25T12:59:39.298483",
+    "balance": 1363301
+  },
+  {
+    "id": "account_067",
+    "phone_number": "+254729251925",
+    "name": "Customer_67",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-07-26T12:59:39.298508",
+    "balance": 2350490
+  },
+  {
+    "id": "account_068",
+    "phone_number": "+254742535178",
+    "name": "Customer_68",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-12-12T12:59:39.298530",
+    "balance": 396012
+  },
+  {
+    "id": "account_069",
+    "phone_number": "+254709103761",
+    "name": "Customer_69",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-05-26T12:59:39.298558",
+    "balance": 3000647
+  },
+  {
+    "id": "account_070",
+    "phone_number": "+254700524173",
+    "name": "Customer_70",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-09-23T12:59:39.298588",
+    "balance": 3797378
+  },
+  {
+    "id": "account_071",
+    "phone_number": "+254735501881",
+    "name": "Customer_71",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-07-06T12:59:39.298610",
+    "balance": 4455393
+  },
+  {
+    "id": "account_072",
+    "phone_number": "+254782342728",
+    "name": "Customer_72",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-12-14T12:59:39.298632",
+    "balance": 4683188
+  },
+  {
+    "id": "account_073",
+    "phone_number": "+254718246653",
+    "name": "Customer_73",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-04-26T12:59:39.298656",
+    "balance": 1097713
+  },
+  {
+    "id": "account_074",
+    "phone_number": "+254756825358",
+    "name": "Customer_74",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-07-10T12:59:39.298677",
+    "balance": 1594169
+  },
+  {
+    "id": "account_075",
+    "phone_number": "+254768876061",
+    "name": "Customer_75",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-08-20T12:59:39.298697",
+    "balance": 2937273
+  },
+  {
+    "id": "account_076",
+    "phone_number": "+254726006504",
+    "name": "Customer_76",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-05-10T12:59:39.298717",
+    "balance": 3201217
+  },
+  {
+    "id": "account_077",
+    "phone_number": "+254753315084",
+    "name": "Customer_77",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-12-09T12:59:39.298743",
+    "balance": 4576436
+  },
+  {
+    "id": "account_078",
+    "phone_number": "+254705551276",
+    "name": "Customer_78",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-10-22T12:59:39.298771",
+    "balance": 4952633
+  },
+  {
+    "id": "account_079",
+    "phone_number": "+254759079074",
+    "name": "Customer_79",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-06-28T12:59:39.298796",
+    "balance": 4176287
+  },
+  {
+    "id": "account_080",
+    "phone_number": "+254766753821",
+    "name": "Customer_80",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-05-31T12:59:39.298819",
+    "balance": 3635169
+  },
+  {
+    "id": "account_081",
+    "phone_number": "+254766015623",
+    "name": "Customer_81",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-12-31T12:59:39.298840",
+    "balance": 4648480
+  },
+  {
+    "id": "account_082",
+    "phone_number": "+254731308272",
+    "name": "Customer_82",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-01-21T12:59:39.298867",
+    "balance": 3315435
+  },
+  {
+    "id": "account_083",
+    "phone_number": "+254777668840",
+    "name": "Customer_83",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-06-06T12:59:39.298890",
+    "balance": 2215537
+  },
+  {
+    "id": "account_084",
+    "phone_number": "+254782998014",
+    "name": "Customer_84",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-11-05T12:59:39.298912",
+    "balance": 1765653
+  },
+  {
+    "id": "account_085",
+    "phone_number": "+254790592974",
+    "name": "Customer_85",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-08-12T12:59:39.298935",
+    "balance": 3337509
+  },
+  {
+    "id": "account_086",
+    "phone_number": "+254706516033",
+    "name": "Customer_86",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-01-13T12:59:39.298956",
+    "balance": 1958730
+  },
+  {
+    "id": "account_087",
+    "phone_number": "+254722481074",
+    "name": "Customer_87",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-02-04T12:59:39.298986",
+    "balance": 2387899
+  },
+  {
+    "id": "account_088",
+    "phone_number": "+254789789340",
+    "name": "Customer_88",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-01-14T12:59:39.299012",
+    "balance": 1607655
+  },
+  {
+    "id": "account_089",
+    "phone_number": "+254720814788",
+    "name": "Customer_89",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-01-13T12:59:39.299037",
+    "balance": 3427762
+  },
+  {
+    "id": "account_090",
+    "phone_number": "+254784576786",
+    "name": "Customer_90",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-07-01T12:59:39.299060",
+    "balance": 913071
+  },
+  {
+    "id": "account_091",
+    "phone_number": "+254788670372",
+    "name": "Customer_91",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-01-17T12:59:39.299082",
+    "balance": 14049
+  },
+  {
+    "id": "account_092",
+    "phone_number": "+254748475661",
+    "name": "Customer_92",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-08-18T12:59:39.299103",
+    "balance": 119753
+  },
+  {
+    "id": "account_093",
+    "phone_number": "+254760281564",
+    "name": "Customer_93",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-03-23T12:59:39.299125",
+    "balance": 3151390
+  },
+  {
+    "id": "account_094",
+    "phone_number": "+254771493288",
+    "name": "Customer_94",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-11-15T12:59:39.299159",
+    "balance": 1107255
+  },
+  {
+    "id": "account_095",
+    "phone_number": "+254783128497",
+    "name": "Customer_95",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-05-05T12:59:39.299186",
+    "balance": 919294
+  },
+  {
+    "id": "account_096",
+    "phone_number": "+254700288117",
+    "name": "Customer_96",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-08-27T12:59:39.299229",
+    "balance": 740873
+  },
+  {
+    "id": "account_097",
+    "phone_number": "+254796229889",
+    "name": "Customer_97",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-02-13T12:59:39.299255",
+    "balance": 553672
+  },
+  {
+    "id": "account_098",
+    "phone_number": "+254768030324",
+    "name": "Customer_98",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2025-04-14T12:59:39.299279",
+    "balance": 3330107
+  },
+  {
+    "id": "account_099",
+    "phone_number": "+254710797611",
+    "name": "Customer_99",
+    "is_fraudulent": false,
+    "ring_id": null,
+    "created_at": "2026-02-09T12:59:39.299930",
+    "balance": 4324265
+  }
+]

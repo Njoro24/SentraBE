@@ -1,0 +1,122 @@
+[
+  {
+    "ring_id": 0,
+    "accounts": [
+      "account_000",
+      "account_001",
+      "account_002",
+      "account_003",
+      "account_004"
+    ],
+    "size": 5,
+    "pattern": "circular_money_flow"
+  },
+  {
+    "ring_id": 1,
+    "accounts": [
+      "account_005",
+      "account_006",
+      "account_007",
+      "account_008",
+      "account_009"
+    ],
+    "size": 5,
+    "pattern": "circular_money_flow"
+  },
+  {
+    "ring_id": 2,
+    "accounts": [
+      "account_010",
+      "account_011",
+      "account_012",
+      "account_013",
+      "account_014"
+    ],
+    "size": 5,
+    "pattern": "circular_money_flow"
+  },
+  {
+    "ring_id": 3,
+    "accounts": [
+      "account_015",
+      "account_016",
+      "account_017",
+      "account_018",
+      "account_019"
+    ],
+    "size": 5,
+    "pattern": "circular_money_flow"
+  },
+  {
+    "ring_id": 4,
+    "accounts": [
+      "account_020",
+      "account_021",
+      "account_022",
+      "account_023",
+      "account_024"
+    ],
+    "size": 5,
+    "pattern": "circular_money_flow"
+  },
+  {
+    "ring_id": 5,
+    "accounts": [
+      "account_025",
+      "account_026",
+      "account_027",
+      "account_028",
+      "account_029"
+    ],
+    "size": 5,
+    "pattern": "circular_money_flow"
+  },
+  {
+    "ring_id": 6,
+    "accounts": [
+      "account_030",
+      "account_031",
+      "account_032",
+      "account_033",
+      "account_034"
+    ],
+    "size": 5,
+    "pattern": "circular_money_flow"
+  },
+  {
+    "ring_id": 7,
+    "accounts": [
+      "account_035",
+      "account_036",
+      "account_037",
+      "account_038",
+      "account_039"
+    ],
+    "size": 5,
+    "pattern": "circular_money_flow"
+  },
+  {
+    "ring_id": 8,
+    "accounts": [
+      "account_040",
+      "account_041",
+      "account_042",
+      "account_043",
+      "account_044"
+    ],
+    "size": 5,
+    "pattern": "circular_money_flow"
+  },
+  {
+    "ring_id": 9,
+    "accounts": [
+      "account_045",
+      "account_046",
+      "account_047",
+      "account_048",
+      "account_049"
+    ],
+    "size": 5,
+    "pattern": "circular_money_flow"
+  }
+]

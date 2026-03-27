@@ -65,11 +65,12 @@ async def save_alert_feedback(
     """
     try:
         # Verify token and get client
-        token_data = verify_token(authorization)
+        token = authorization.replace("Bearer ", "").strip() if authorization else None
+        token_data = verify_token(token)
         if not token_data:
             raise HTTPException(status_code=401, detail="Unauthorized")
         
-        client_id = token_data.get("client_id")
+        client_id = token_data.client_id if hasattr(token_data, 'client_id') else token_data.get("client_id")
         
         # Get fraud score to extract transaction_id and original values
         fraud_score = db.query(FraudScore).filter(
@@ -158,7 +159,8 @@ async def get_feedback_stats(
     """
     try:
         # Verify token and get client
-        token_data = verify_token(authorization)
+        token = authorization.replace("Bearer ", "").strip() if authorization else None
+        token_data = verify_token(token)
         if not token_data:
             raise HTTPException(status_code=401, detail="Unauthorized")
         
@@ -266,7 +268,8 @@ async def get_alert_feedback(
     """
     try:
         # Verify token and get client
-        token_data = verify_token(authorization)
+        token = authorization.replace("Bearer ", "").strip() if authorization else None
+        token_data = verify_token(token)
         if not token_data:
             raise HTTPException(status_code=401, detail="Unauthorized")
         

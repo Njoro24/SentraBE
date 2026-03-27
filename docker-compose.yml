@@ -121,6 +121,33 @@ services:
       retries: 5
       start_period: 30s
 
+  # WebSocket Alert Server — Phase 4
+  websocket-server:
+    image: python:3.8-slim
+    container_name: sentra-websocket
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./api:/app/api
+      - ./requirements.txt:/app/requirements.txt
+    working_dir: /app
+    command: >
+      bash -c "pip install websockets kafka-python python-dotenv -q &&
+               python api/websocket_server.py"
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_SECURITY_PROTOCOL: PLAINTEXT
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8080), 3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
 volumes:
   postgres_data:
   neo4j_data:

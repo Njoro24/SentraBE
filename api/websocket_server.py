@@ -133,20 +133,30 @@ async def kafka_consumer_loop():
     loop = asyncio.get_event_loop()
 
     def consume():
-        consumer = KafkaConsumer(
-            ALERT_TOPIC,
-            bootstrap_servers=BOOTSTRAP,
-            group_id="sentra-websocket-server",
-            auto_offset_reset="latest",
-            enable_auto_commit=True,
-            value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-            consumer_timeout_ms=-1,
-            fetch_max_wait_ms=500,
-            **kafka_sasl_config()
-        )
-        log.info("Kafka consumer connected")
-        for msg in consumer:
-            alert_queue.put_nowait(msg.value)
+        import time
+        retries = 0
+        while True:
+            try:
+                consumer = KafkaConsumer(
+                    ALERT_TOPIC,
+                    bootstrap_servers=BOOTSTRAP,
+                    group_id="sentra-websocket-server",
+                    auto_offset_reset="latest",
+                    enable_auto_commit=True,
+                    value_deserializer=lambda m: json.loads(m.decode("utf-8")),
+                    consumer_timeout_ms=-1,
+                    fetch_max_wait_ms=500,
+                    **kafka_sasl_config()
+                )
+                log.info("Kafka consumer connected")
+                retries = 0
+                for msg in consumer:
+                    alert_queue.put_nowait(msg.value)
+            except Exception as e:
+                retries += 1
+                wait = min(30, 2 ** retries)
+                log.error(f"Kafka consumer error (retry {retries} in {wait}s): {e}")
+                time.sleep(wait)
 
     # Run Kafka consumer in thread pool
     await loop.run_in_executor(None, consume)
@@ -186,16 +196,29 @@ async def stats_broadcaster():
                     pass
 
 
+async def kafka_consumer_loop_safe():
+    """Kafka consumer with retry — never crashes the server"""
+    while True:
+        try:
+            await kafka_consumer_loop()
+        except Exception as e:
+            log.error(f"Kafka consumer error: {e} — retrying in 5s")
+            await asyncio.sleep(5)
+
+
 async def main():
     global alert_queue
     alert_queue = asyncio.Queue(maxsize=1000)
 
     log.info(f"Starting WebSocket server on ws://{WS_HOST}:{WS_PORT}")
 
+    # Start WebSocket server FIRST — independent of Kafka
     ws_server = await websockets.serve(handle_client, WS_HOST, WS_PORT)
+    log.info(f"WebSocket server listening on port {WS_PORT}")
 
+    # Kafka consumer and queue processor run alongside — failures don't kill WS
     await asyncio.gather(
-        kafka_consumer_loop(),
+        kafka_consumer_loop_safe(),
         queue_processor(),
         stats_broadcaster(),
     )

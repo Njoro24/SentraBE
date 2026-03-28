@@ -77,8 +77,24 @@ async def save_alert_feedback(
             FraudScore.transaction_id == alert_id
         ).first()
         
+        # Auto-create a stub so feedback works even for alerts not yet scored
         if not fraud_score:
-            raise HTTPException(status_code=404, detail="Alert not found")
+            fraud_score = FraudScore(
+                client_id=client_id,
+                transaction_id=alert_id,
+                risk_score=0.0,
+                risk_level="unknown",
+                velocity_signal=0.0,
+                amount_anomaly_signal=0.0,
+                device_new_signal=0.0,
+                location_change_signal=0.0,
+                recommendation="review",
+                processing_time_ms=0.0,
+                created_at=datetime.utcnow()
+            )
+            db.add(fraud_score)
+            db.commit()
+            db.refresh(fraud_score)
         
         # Check if feedback already exists
         existing_feedback = db.query(AlertFeedback).filter(
